@@ -4,6 +4,7 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model Tenant {
@@ -73,7 +74,7 @@ model Product {
   customsRate    Float   @default(0.08)
   hsCode         String?
   hsDescription  String?
-  moq            Int?    // 최소주문수량 (MOQ)
+  moq            Int?
   inlandShipping Float   @default(0)
 
   costKrw        Float?
