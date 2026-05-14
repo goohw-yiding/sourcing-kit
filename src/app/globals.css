@@ -1,0 +1,43 @@
+/* Pretendard 폰트 — @import는 맨 앞에 있어야 함 */
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css');
+
+@import "tailwindcss";
+
+/* ── 테마 CSS 변수 ────────────────────────────────── */
+:root {
+  --primary: #0F2D59;
+  --primary-light: #1E4080;
+  --primary-lighter: #EEF2F8;
+}
+[data-theme="forest"] {
+  --primary: #1A4731;
+  --primary-light: #2D7A50;
+  --primary-lighter: #ECFDF5;
+}
+[data-theme="charcoal"] {
+  --primary: #1C1C2E;
+  --primary-light: #2D2D44;
+  --primary-lighter: #F5F3FF;
+}
+
+body {
+  background: #F4F6FA;
+  color: #0F172A;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 숫자 폰트 선명하게 */
+.font-mono, input[type="number"] {
+  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
+}
+
+/* 스크롤바 숨김 */
+.scrollbar-none {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}

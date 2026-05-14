@@ -1,0 +1,152 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Tenant {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+
+  users     User[]
+  suppliers Supplier[]
+  products  Product[]
+  buyers    Buyer[]
+  orders    Order[]
+}
+
+model User {
+  id        String   @id @default(cuid())
+  tenantId  String
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("staff")
+  createdAt DateTime @default(now())
+
+  tenant    Tenant    @relation(fields: [tenantId], references: [id])
+  products  Product[]
+}
+
+model Supplier {
+  id         String   @id @default(cuid())
+  tenantId   String
+  name       String
+  contact    String?
+  phone      String?
+  wechatId   String?
+  marketArea String?
+  address    String?
+  category   String?
+  url1688    String?
+  memo       String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  tenant     Tenant    @relation(fields: [tenantId], references: [id])
+  products   Product[]
+}
+
+model Product {
+  id             String   @id @default(cuid())
+  tenantId       String
+  supplierId     String?
+  createdById    String?
+
+  nameCn         String?
+  nameKr         String
+  imageUrl       String?
+  memo           String?
+
+  costCny        Float
+  exchangeRate   Float
+  packagingCost  Float   @default(0)
+  chinaShipping  Float   @default(0)
+  agentFeeRate   Float   @default(0)
+  cbm            Float   @default(0)
+  cbmRate        Float   @default(90000)
+  hasCoOrigin    Boolean @default(false)
+  coOriginCost   Float   @default(0)
+  customsRate    Float   @default(0.08)
+  hsCode         String?
+  hsDescription  String?
+  moq            Int?    // 최소주문수량 (MOQ)
+  inlandShipping Float   @default(0)
+
+  costKrw        Float?
+  agentFee       Float?
+  cbmShipping    Float?
+  customsDuty    Float?
+  vat            Float?
+  landedCost     Float?
+
+  status         String  @default("sourcing")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  tenant         Tenant    @relation(fields: [tenantId], references: [id])
+  supplier       Supplier? @relation(fields: [supplierId], references: [id])
+  createdBy      User?     @relation(fields: [createdById], references: [id])
+  proposalItems  ProposalItem[]
+}
+
+model Buyer {
+  id        String   @id @default(cuid())
+  tenantId  String
+  name      String
+  contact   String?
+  phone     String?
+  kakaoId   String?
+  email     String?
+  category  String?
+  memo      String?
+  createdAt DateTime @default(now())
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id])
+  proposals Proposal[]
+  orders    Order[]
+}
+
+model Proposal {
+  id         String    @id @default(cuid())
+  tenantId   String
+  buyerId    String
+  title      String
+  shareToken String    @unique @default(cuid())
+  viewedAt   DateTime?
+  createdAt  DateTime  @default(now())
+
+  buyer      Buyer          @relation(fields: [buyerId], references: [id])
+  items      ProposalItem[]
+}
+
+model ProposalItem {
+  id         String  @id @default(cuid())
+  proposalId String
+  productId  String
+  priceKrw   Float
+  quantity   Int     @default(1)
+  memo       String?
+
+  proposal   Proposal @relation(fields: [proposalId], references: [id])
+  product    Product  @relation(fields: [productId], references: [id])
+}
+
+model Order {
+  id        String   @id @default(cuid())
+  tenantId  String
+  buyerId   String?
+  orderNo   String?
+  status    String   @default("ordered")
+  totalCny  Float?
+  totalKrw  Float?
+  memo      String?
+  orderedAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant    Tenant  @relation(fields: [tenantId], references: [id])
+  buyer     Buyer?  @relation(fields: [buyerId], references: [id])
+}
