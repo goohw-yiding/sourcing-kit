@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 
+export const maxDuration = 60;
+
 const HS_DB = [
   // ===== 의류 =====
   { hsCode: "6110200000", keywords: ["면 스웨터", "니트", "스웨터", "풀오버", "면니트", "棉毛衣", "니트웨어"] },
