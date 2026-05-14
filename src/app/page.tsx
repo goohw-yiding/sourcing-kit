@@ -41,7 +41,7 @@ export default function HomePage() {
   ];
 
   return (
-    <div className="min-h-screen pb-24 bg-[#F4F6FA]">
+    <div className="min-h-screen bg-[#F4F6FA]">
       {/* 헤더 */}
       <header className="px-5 pt-14 pb-6 bg-[var(--primary)]">
         <p className="text-xs font-medium mb-1" style={{ color: "rgba(255,255,255,0.5)" }}>{t("ob.app_name")} 📦</p>

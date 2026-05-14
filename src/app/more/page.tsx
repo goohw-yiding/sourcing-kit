@@ -41,7 +41,7 @@ export default function MorePage() {
   };
 
   return (
-    <div className="min-h-screen pb-24 bg-[#F4F6FA]">
+    <div className="min-h-screen pb-28 bg-[#F4F6FA]">
       <header className="bg-[var(--primary)] text-white px-5 pt-14 pb-5">
         <h1 className="text-xl font-bold">{t("more.title")}</h1>
         <p className="text-sm mt-0.5" style={{ color: "rgba(255,255,255,0.6)" }}>{t("more.subtitle")}</p>

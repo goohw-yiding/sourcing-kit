@@ -28,7 +28,7 @@ export default function IndoorMapPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F4F6FA] pb-8">
+    <div className="min-h-screen bg-[#F4F6FA] pb-28">
       {/* 헤더 */}
       <header className="bg-[var(--primary)] px-4 pt-12 pb-4">
         <div className="flex items-center gap-3 mb-3">
