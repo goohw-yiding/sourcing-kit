@@ -722,6 +722,15 @@ export default function SourcingPage() {
                         className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange-400" />
                     </div>
                   </div>
+                  {form.hsCode && (
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">HS코드 (AI추정)</label>
+                      <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-xl px-3 py-2">
+                        <span className="text-sm font-mono font-bold text-blue-700">{form.hsCode}</span>
+                        <span className="text-xs text-blue-400 ml-auto">AI추정</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* 운송비 */}
@@ -1045,32 +1054,10 @@ export default function SourcingPage() {
                       쿠팡
                     </button>
                     <button
-                      onClick={async () => {
-                        // 이미지가 있으면 1688 사진검색, 없으면 텍스트 검색
-                        const imgData = (form.imageUrl as string) || null;
-                        if (imgData && imgData.startsWith("data:")) {
-                          try {
-                            const res = await fetch("/api/temp-image", {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({
-                                imageBase64: imgData,
-                                mimeType: imgData.match(/data:(image\/\w+);/)?.[1] || "image/jpeg",
-                              }),
-                            });
-                            const { url } = await res.json();
-                            if (url) {
-                              openNewTab(`https://s.1688.com/youyuan/index.htm?imageAddress=${encodeURIComponent(url)}`);
-                              return;
-                            }
-                          } catch { /* 실패 시 텍스트 검색으로 폴백 */ }
-                        }
-                        // 폴백: 중국어 상품명으로 텍스트 검색
-                        openNewTab(`https://s.1688.com/selloffer/offerlist.htm?keywords=${encodeURIComponent(marketResult.productNameCn || marketResult.productNameKr)}`);
-                      }}
-                      className="bg-orange-500 text-white text-xs font-bold py-2.5 rounded-xl text-center w-full flex items-center justify-center gap-1"
+                      onClick={() => openNewTab(`https://m.1688.com/offer_search.htm?keywords=${encodeURIComponent(marketResult.productNameCn || marketResult.productNameKr)}`)}
+                      className="bg-orange-500 text-white text-xs font-bold py-2.5 rounded-xl text-center w-full"
                     >
-                      📷 1688사진검색
+                      1688 소싱
                     </button>
                   </div>
 
@@ -1443,32 +1430,10 @@ export default function SourcingPage() {
                       쿠팡
                     </button>
                     <button
-                      onClick={async () => {
-                        // 이미지가 있으면 1688 사진검색, 없으면 텍스트 검색
-                        const imgData = (form.imageUrl as string) || null;
-                        if (imgData && imgData.startsWith("data:")) {
-                          try {
-                            const res = await fetch("/api/temp-image", {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({
-                                imageBase64: imgData,
-                                mimeType: imgData.match(/data:(image\/\w+);/)?.[1] || "image/jpeg",
-                              }),
-                            });
-                            const { url } = await res.json();
-                            if (url) {
-                              openNewTab(`https://s.1688.com/youyuan/index.htm?imageAddress=${encodeURIComponent(url)}`);
-                              return;
-                            }
-                          } catch { /* 실패 시 텍스트 검색으로 폴백 */ }
-                        }
-                        // 폴백: 중국어 상품명으로 텍스트 검색
-                        openNewTab(`https://s.1688.com/selloffer/offerlist.htm?keywords=${encodeURIComponent(marketResult.productNameCn || marketResult.productNameKr)}`);
-                      }}
-                      className="bg-orange-500 text-white text-xs font-bold py-2.5 rounded-xl text-center w-full flex items-center justify-center gap-1"
+                      onClick={() => openNewTab(`https://m.1688.com/offer_search.htm?keywords=${encodeURIComponent(marketResult.productNameCn || marketResult.productNameKr)}`)}
+                      className="bg-orange-500 text-white text-xs font-bold py-2.5 rounded-xl text-center w-full"
                     >
-                      📷 1688사진검색
+                      1688 소싱
                     </button>
                   </div>
 

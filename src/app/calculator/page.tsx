@@ -275,7 +275,7 @@ export default function CalculatorPage() {
     : "기본값";
 
   return (
-    <div className="min-h-screen pb-28 bg-[#F4F6FA]">
+    <div className="min-h-screen pb-28 bg-[#F4F6FA] overflow-x-hidden">
       {/* 헤더 */}
       <header className="text-white px-5 pt-14 pb-5 flex items-center gap-3 bg-[var(--primary)]">
         {returnTo === "sourcing" ? (
@@ -978,25 +978,25 @@ export default function CalculatorPage() {
         {input.costCny > 0 && (
           <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
             <h2 className="font-semibold text-gray-800 mb-3">💰 판매가 & 마진 계산</h2>
-            <div className="flex items-center gap-3 mb-3">
-              <label className="text-sm text-gray-600 shrink-0">목표 마진율</label>
-              <div className="flex items-center gap-1 flex-1">
+            <div className="mb-3">
+              <label className="text-sm text-gray-600 block mb-2">목표 마진율</label>
+              <div className="flex items-center gap-2">
                 <input
                   type="number"
                   inputMode="decimal"
                   value={targetMargin || ""}
                   onChange={(e) => setTargetMargin(parseFloat(e.target.value) || 0)}
-                  className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm text-right focus:outline-none focus:border-orange-400"
+                  className="w-20 text-right border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange-400"
                 />
                 <span className="text-sm text-gray-400">%</span>
-              </div>
-              <div className="flex gap-1">
-                {[30, 40, 50].map((v) => (
-                  <button key={v} onClick={() => setTargetMargin(v)}
-                    className={`text-xs px-2 py-1 rounded-lg transition-colors ${targetMargin === v ? "bg-orange-500 text-white" : "bg-gray-100 text-gray-500"}`}>
-                    {v}%
-                  </button>
-                ))}
+                <div className="flex gap-1.5 flex-1 justify-end">
+                  {[30, 40, 50].map((v) => (
+                    <button key={v} onClick={() => setTargetMargin(v)}
+                      className={`text-xs px-3 py-1.5 rounded-lg transition-colors ${targetMargin === v ? "bg-orange-500 text-white" : "bg-gray-100 text-gray-500"}`}>
+                      {v}%
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
             {targetMargin > 0 && result.landedCost > 0 && (
