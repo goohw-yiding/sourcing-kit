@@ -106,6 +106,7 @@ export default function SourcingPage() {
   const [showMarket, setShowMarket] = useState(false);
   const [marketLoading, setMarketLoading] = useState(false);
   const [marketResult, setMarketResult] = useState<MarketResult | null>(null);
+  const [marketError, setMarketError] = useState<string | null>(null);
 
   const handleLocate = async () => {
     setLocating(true);
@@ -280,18 +281,39 @@ export default function SourcingPage() {
     setShowMarket(true);
     setMarketLoading(true);
     setMarketResult(null);
+    setMarketError(null);
     try {
       const fd = new FormData();
       if (imageFileRef.current) {
+        // 방금 촬영/선택한 파일이 메모리에 있는 경우
         fd.append("image", imageFileRef.current);
+      } else if (form.imageUrl) {
+        // 이미 서버에 업로드된 이미지 URL → 다시 fetch해서 blob으로 전송
+        const imgRes = await fetch(form.imageUrl as string);
+        const blob = await imgRes.blob();
+        fd.append("image", blob, "product.jpg");
       } else if (form.nameKr) {
+        // 이미지 없으면 상품명으로 분석
         fd.append("productName", form.nameKr as string);
-      } else return;
+      } else {
+        setMarketError("사진을 찍거나 상품명을 입력해주세요.");
+        return;
+      }
       const res = await fetch("/api/market/analyze", { method: "POST", body: fd });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        setMarketError(err.error || `분석 오류 (${res.status})`);
+        return;
+      }
       const data = await res.json();
-      setMarketResult(data);
-    } catch {
-      setMarketResult(null);
+      if (data.error) {
+        setMarketError(data.error);
+      } else {
+        setMarketResult(data);
+      }
+    } catch (e) {
+      setMarketError("네트워크 오류가 발생했습니다. 다시 시도해주세요.");
+      console.error(e);
     } finally {
       setMarketLoading(false);
     }
@@ -944,6 +966,19 @@ export default function SourcingPage() {
                   <div className="w-10 h-10 border-3 border-purple-500 border-t-transparent rounded-full animate-spin" />
                   <p className="text-sm text-gray-500">사진 분석 중... 잠시만요</p>
                   <p className="text-xs text-gray-400">네이버쇼핑 실시간 가격 조회 중</p>
+                </div>
+              )}
+
+              {marketError && !marketLoading && (
+                <div className="bg-red-50 border border-red-200 rounded-2xl p-6 flex flex-col items-center gap-3 text-center">
+                  <span className="text-3xl">⚠️</span>
+                  <p className="text-sm font-semibold text-red-700">{marketError}</p>
+                  <button
+                    onClick={runMarketAnalysis}
+                    className="mt-1 text-xs bg-red-100 text-red-700 px-4 py-2 rounded-full font-medium active:scale-95 transition-transform"
+                  >
+                    다시 시도
+                  </button>
                 </div>
               )}
 
