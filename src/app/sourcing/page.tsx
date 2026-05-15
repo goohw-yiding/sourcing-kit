@@ -264,17 +264,19 @@ export default function SourcingPage() {
 
   const setF = (key: string, value: unknown) => setForm((p) => ({ ...p, [key]: value }));
 
-  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     imageFileRef.current = file;
     setImagePreview(URL.createObjectURL(file));
     setMarketResult(null);
-    const fd = new FormData();
-    fd.append("file", file);
-    const res = await fetch("/api/upload", { method: "POST", body: fd });
-    const { url } = await res.json();
-    setF("imageUrl", url);
+    // base64로 변환해서 DB 저장용으로 사용 (Vercel 서버리스는 파일시스템 쓰기 불가)
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const base64 = ev.target?.result as string;
+      setF("imageUrl", base64);
+    };
+    reader.readAsDataURL(file);
   };
 
   const runMarketAnalysis = async () => {
@@ -807,6 +809,197 @@ export default function SourcingPage() {
           onApply={(cbm) => setF("cbm", cbm)}
           onClose={() => setShowCbmCalc(false)}
         />
+      )}
+
+      {/* AI 시장조사 모달 (폼에서도 표시) */}
+      {showMarket && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-end">
+          <div className="bg-[#F4F6FA] w-full max-h-[90vh] rounded-t-3xl overflow-y-auto">
+            <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-indigo-600 px-4 pt-5 pb-4 rounded-t-3xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-white" />
+                  <h2 className="text-white font-bold text-base">AI 한국 시장조사</h2>
+                </div>
+                <button onClick={() => setShowMarket(false)} className="bg-white/20 rounded-full p-1.5">
+                  <X className="w-4 h-4 text-white" />
+                </button>
+              </div>
+              <p className="text-purple-200 text-xs mt-1">네이버쇼핑 실시간 가격 · AI 마진 분석</p>
+            </div>
+
+            <div className="p-4 space-y-3">
+              {marketLoading && (
+                <div className="bg-white rounded-2xl p-10 flex flex-col items-center gap-3">
+                  <div className="w-10 h-10 border-3 border-purple-500 border-t-transparent rounded-full animate-spin" />
+                  <p className="text-sm text-gray-500">사진 분석 중... 잠시만요</p>
+                  <p className="text-xs text-gray-400">네이버쇼핑 실시간 가격 조회 중</p>
+                </div>
+              )}
+
+              {marketError && !marketLoading && (
+                <div className="bg-red-50 border border-red-200 rounded-2xl p-6 flex flex-col items-center gap-3 text-center">
+                  <span className="text-3xl">⚠️</span>
+                  <p className="text-sm font-semibold text-red-700">{marketError}</p>
+                  <button
+                    onClick={runMarketAnalysis}
+                    className="mt-1 text-xs bg-red-100 text-red-700 px-4 py-2 rounded-full font-medium active:scale-95 transition-transform"
+                  >
+                    다시 시도
+                  </button>
+                </div>
+              )}
+
+              {marketResult && !marketLoading && (
+                <>
+                  <div className="bg-white rounded-2xl p-4 shadow-sm">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-xs text-gray-400 mb-1">AI 인식 상품명</p>
+                        <p className="text-lg font-bold text-gray-800">{marketResult.productNameKr}</p>
+                        <p className="text-sm text-gray-400">{marketResult.productNameCn}</p>
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {marketResult.features.map((f, i) => (
+                            <span key={i} className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{f}</span>
+                          ))}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setF("nameKr", marketResult.productNameKr);
+                          setF("nameCn", marketResult.productNameCn);
+                          setShowMarket(false);
+                        }}
+                        className="flex-shrink-0 bg-[var(--primary)] text-white text-xs font-bold px-3 py-2 rounded-xl"
+                      >
+                        이 이름<br/>사용하기
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-2xl p-4 shadow-sm">
+                    <div className="flex items-center gap-2 mb-3">
+                      <TrendingUp className="w-4 h-4 text-purple-600" />
+                      <p className="text-sm font-bold text-gray-700">한국 네이버쇼핑 실시간 가격</p>
+                    </div>
+                    {marketResult.lowestPrice > 0 ? (
+                      <div className="grid grid-cols-3 gap-2 mb-3">
+                        <div className="bg-green-50 rounded-xl p-3 text-center">
+                          <p className="text-xs text-green-600 mb-1">최저가</p>
+                          <p className="text-base font-bold text-green-700">{marketResult.lowestPrice.toLocaleString()}원</p>
+                        </div>
+                        <div className="bg-blue-50 rounded-xl p-3 text-center">
+                          <p className="text-xs text-blue-600 mb-1">평균가</p>
+                          <p className="text-base font-bold text-blue-700">{marketResult.avgPrice.toLocaleString()}원</p>
+                        </div>
+                        <div className="bg-orange-50 rounded-xl p-3 text-center">
+                          <p className="text-xs text-orange-600 mb-1">최고가</p>
+                          <p className="text-base font-bold text-orange-700">{marketResult.highestPrice.toLocaleString()}원</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-400 mb-3">네이버쇼핑 데이터 없음</p>
+                    )}
+                    <div className="grid grid-cols-3 gap-2 text-center">
+                      <div>
+                        <p className="text-xs text-gray-400">예상 소싱가</p>
+                        <p className="text-xs font-semibold text-gray-700">{marketResult.sourcingPriceEstimate}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-400">예상 마진율</p>
+                        <p className="text-xs font-bold text-purple-600">{marketResult.marginEstimate}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-400">경쟁강도</p>
+                        <p className={`text-xs font-bold ${marketResult.competitionLevel === "낮음" ? "text-green-600" : marketResult.competitionLevel === "높음" ? "text-red-500" : "text-amber-600"}`}>
+                          {marketResult.competitionLevel}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {marketResult.naverItems.length > 0 && (
+                    <div className="bg-white rounded-2xl overflow-hidden shadow-sm">
+                      <div className="px-4 py-3 border-b border-gray-100">
+                        <p className="text-sm font-bold text-gray-700">네이버쇼핑 실제 판매 상품</p>
+                      </div>
+                      {marketResult.naverItems.slice(0, 4).map((item, i) => (
+                        <a key={i} href={item.link} target="_blank" rel="noopener noreferrer"
+                          className="flex items-center gap-3 px-4 py-3 border-b border-gray-50 last:border-0 active:bg-gray-50">
+                          {item.image && (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={item.image} alt="" className="w-12 h-12 rounded-lg object-cover flex-shrink-0" />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-gray-700 truncate">{item.title}</p>
+                            <p className="text-xs text-gray-400">{item.mallName}</p>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <p className="text-sm font-bold text-gray-800">{parseInt(item.lprice).toLocaleString()}원</p>
+                            <ExternalLink className="w-3 h-3 text-gray-300 ml-auto mt-0.5" />
+                          </div>
+                        </a>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className={`rounded-2xl p-4 shadow-sm ${
+                    marketResult.recommendation === "추천" ? "bg-green-50 border border-green-100" :
+                    marketResult.recommendation === "비추천" ? "bg-red-50 border border-red-100" :
+                    "bg-amber-50 border border-amber-100"
+                  }`}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className={`text-sm font-bold px-3 py-1 rounded-full ${
+                        marketResult.recommendation === "추천" ? "bg-green-500 text-white" :
+                        marketResult.recommendation === "비추천" ? "bg-red-500 text-white" :
+                        "bg-amber-500 text-white"
+                      }`}>
+                        {marketResult.recommendation === "추천" ? "✅ 소싱 추천" :
+                         marketResult.recommendation === "비추천" ? "❌ 소싱 비추천" : "⚠️ 검토 필요"}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-600 mb-2">{marketResult.recommendReason}</p>
+                    <p className="text-xs text-gray-500">{marketResult.aiComment}</p>
+                  </div>
+
+                  <div className="bg-white rounded-2xl p-3 shadow-sm flex items-start gap-2">
+                    <ShieldAlert className="w-4 h-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                    <div>
+                      <p className="text-xs font-bold text-gray-700">수입 규제</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{marketResult.kcRequired}</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-2xl p-3 shadow-sm">
+                    <p className="text-xs font-bold text-gray-700 mb-2">추천 판매 키워드</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {marketResult.recommendKeywords.map((kw, i) => (
+                        <span key={i} className="text-xs bg-purple-50 text-purple-700 border border-purple-100 px-2.5 py-1 rounded-full">{kw}</span>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2">
+                    {[
+                      { name: "네이버쇼핑", url: marketResult.searchLinks.naver, color: "bg-green-500" },
+                      { name: "쿠팡", url: marketResult.searchLinks.coupang, color: "bg-red-500" },
+                      { name: "11번가", url: marketResult.searchLinks.elevenst, color: "bg-orange-500" },
+                    ].map((site) => (
+                      <a key={site.name} href={site.url} target="_blank" rel="noopener noreferrer"
+                        className={`${site.color} text-white text-xs font-bold py-2.5 rounded-xl text-center`}>
+                        {site.name}
+                      </a>
+                    ))}
+                  </div>
+
+                  <p className="text-[10px] text-gray-400 text-center pb-2">
+                    ※ 가격은 네이버쇼핑 실시간 데이터 기준 · AI 분석은 참고용입니다
+                  </p>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </>
     );
