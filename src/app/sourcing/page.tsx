@@ -23,6 +23,8 @@ interface MarketResult {
   productNameCn: string;
   category: string;
   features: string[];
+  hsCode?: string;
+  customsRateKr?: number;
   naverItems: NaverShopItem[];
   lowestPrice: number;
   highestPrice: number;
@@ -866,9 +868,10 @@ export default function SourcingPage() {
 
               {marketResult && !marketLoading && (
                 <>
+                  {/* 상품명 + 전체 적용 버튼 */}
                   <div className="bg-white rounded-2xl p-4 shadow-sm">
                     <div className="flex items-start justify-between gap-3">
-                      <div>
+                      <div className="flex-1 min-w-0">
                         <p className="text-xs text-gray-400 mb-1">AI 인식 상품명</p>
                         <p className="text-lg font-bold text-gray-800">{marketResult.productNameKr}</p>
                         <p className="text-sm text-gray-400">{marketResult.productNameCn}</p>
@@ -890,6 +893,45 @@ export default function SourcingPage() {
                       </button>
                     </div>
                   </div>
+
+                  {/* HS코드 + 관세율 자동입력 카드 */}
+                  {marketResult.hsCode && (
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-4 shadow-sm">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-base">🔖</span>
+                        <p className="text-sm font-bold text-blue-800">AI 추정 HS코드 · 관세율</p>
+                        <span className="text-xs text-blue-400 ml-auto">참고용</span>
+                      </div>
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="flex-1 bg-white rounded-xl px-3 py-2 border border-blue-100">
+                          <p className="text-xs text-gray-400">HS코드</p>
+                          <p className="text-sm font-bold text-gray-800 font-mono">{marketResult.hsCode}</p>
+                        </div>
+                        <div className="bg-white rounded-xl px-3 py-2 border border-blue-100 text-center">
+                          <p className="text-xs text-gray-400">관세율</p>
+                          <p className="text-xl font-black text-orange-600">{marketResult.customsRateKr}%</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setF("nameKr", marketResult.productNameKr);
+                          setF("nameCn", marketResult.productNameCn);
+                          if (marketResult.customsRateKr !== undefined) {
+                            setF("customsRate", marketResult.customsRateKr / 100);
+                          }
+                          if (marketResult.hsCode) {
+                            setF("hsCode", marketResult.hsCode);
+                          }
+                          if (!showAdvanced) setShowAdvanced(true);
+                          setShowMarket(false);
+                        }}
+                        className="w-full bg-blue-600 text-white text-sm font-bold py-2.5 rounded-xl active:opacity-80"
+                      >
+                        ✓ 상품명 + 관세율 한번에 적용
+                      </button>
+                      <p className="text-[10px] text-blue-400 mt-2 text-center">* AI 추정값입니다. 실제 세율은 관세청에서 확인하세요</p>
+                    </div>
+                  )}
 
                   <div className="bg-white rounded-2xl p-4 shadow-sm">
                     <div className="flex items-center gap-2 mb-3">
@@ -1218,9 +1260,10 @@ export default function SourcingPage() {
               {marketResult && !marketLoading && (
                 <>
                   {/* 상품명 카드 */}
+                  {/* 상품명 + 전체 적용 버튼 */}
                   <div className="bg-white rounded-2xl p-4 shadow-sm">
                     <div className="flex items-start justify-between gap-3">
-                      <div>
+                      <div className="flex-1 min-w-0">
                         <p className="text-xs text-gray-400 mb-1">AI 인식 상품명</p>
                         <p className="text-lg font-bold text-gray-800">{marketResult.productNameKr}</p>
                         <p className="text-sm text-gray-400">{marketResult.productNameCn}</p>
@@ -1242,6 +1285,45 @@ export default function SourcingPage() {
                       </button>
                     </div>
                   </div>
+
+                  {/* HS코드 + 관세율 자동입력 카드 */}
+                  {marketResult.hsCode && (
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-4 shadow-sm">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-base">🔖</span>
+                        <p className="text-sm font-bold text-blue-800">AI 추정 HS코드 · 관세율</p>
+                        <span className="text-xs text-blue-400 ml-auto">참고용</span>
+                      </div>
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="flex-1 bg-white rounded-xl px-3 py-2 border border-blue-100">
+                          <p className="text-xs text-gray-400">HS코드</p>
+                          <p className="text-sm font-bold text-gray-800 font-mono">{marketResult.hsCode}</p>
+                        </div>
+                        <div className="bg-white rounded-xl px-3 py-2 border border-blue-100 text-center">
+                          <p className="text-xs text-gray-400">관세율</p>
+                          <p className="text-xl font-black text-orange-600">{marketResult.customsRateKr}%</p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setF("nameKr", marketResult.productNameKr);
+                          setF("nameCn", marketResult.productNameCn);
+                          if (marketResult.customsRateKr !== undefined) {
+                            setF("customsRate", marketResult.customsRateKr / 100);
+                          }
+                          if (marketResult.hsCode) {
+                            setF("hsCode", marketResult.hsCode);
+                          }
+                          if (!showAdvanced) setShowAdvanced(true);
+                          setShowMarket(false);
+                        }}
+                        className="w-full bg-blue-600 text-white text-sm font-bold py-2.5 rounded-xl active:opacity-80"
+                      >
+                        ✓ 상품명 + 관세율 한번에 적용
+                      </button>
+                      <p className="text-[10px] text-blue-400 mt-2 text-center">* AI 추정값입니다. 실제 세율은 관세청에서 확인하세요</p>
+                    </div>
+                  )}
 
                   {/* 한국 가격 현황 */}
                   <div className="bg-white rounded-2xl p-4 shadow-sm">

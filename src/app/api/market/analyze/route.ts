@@ -20,6 +20,8 @@ export interface MarketAnalysis {
   category: string;
   features: string[];
   hsCodeHint: string;
+  hsCode: string;
+  customsRateKr: number;
   naverItems: NaverShopItem[];
   lowestPrice: number;
   highestPrice: number;
@@ -46,6 +48,8 @@ async function analyzeImageWithAI(imageBase64: string, mimeType: string): Promis
   category: string;
   features: string[];
   hsCodeHint: string;
+  hsCode: string;
+  customsRateKr: number;
   searchKeyword: string;
   competitionLevel: "낮음" | "보통" | "높음";
   trend: "상승" | "보합" | "하락";
@@ -78,6 +82,8 @@ async function analyzeImageWithAI(imageBase64: string, mimeType: string): Promis
   "category": "카테고리 (예: 주방용품, 완구, 의류)",
   "features": ["특징1", "특징2", "특징3"],
   "hsCodeHint": "예상 HS코드 앞 6자리",
+  "hsCode": "한국 수입 HS코드 10자리 (예: 6217109000). 확실하지 않으면 가장 근접한 코드 제시",
+  "customsRateKr": 한국 기본관세율 숫자만 (예: 13 → 13%). 해당 HS코드 기준 정확한 세율,
   "searchKeyword": "네이버쇼핑 검색용 키워드 (짧고 명확하게)",
   "competitionLevel": "낮음 또는 보통 또는 높음",
   "trend": "상승 또는 보합 또는 하락",
@@ -105,6 +111,8 @@ async function analyzeTextWithAI(productName: string): Promise<{
   category: string;
   features: string[];
   hsCodeHint: string;
+  hsCode: string;
+  customsRateKr: number;
   searchKeyword: string;
   competitionLevel: "낮음" | "보통" | "높음";
   trend: "상승" | "보합" | "하락";
@@ -131,6 +139,8 @@ async function analyzeTextWithAI(productName: string): Promise<{
   "category": "카테고리",
   "features": ["특징1", "특징2", "특징3"],
   "hsCodeHint": "예상 HS코드 앞 6자리",
+  "hsCode": "한국 수입 HS코드 10자리 (예: 6217109000)",
+  "customsRateKr": 한국 기본관세율 숫자만 (예: 13),
   "searchKeyword": "네이버쇼핑 검색용 키워드",
   "competitionLevel": "낮음 또는 보통 또는 높음",
   "trend": "상승 또는 보합 또는 하락",
@@ -216,6 +226,7 @@ export async function POST(req: NextRequest) {
 
     const result: MarketAnalysis = {
       ...aiResult,
+      customsRateKr: Number(aiResult.customsRateKr) || 8,
       naverItems: naverItems.slice(0, 6),
       lowestPrice: lowest,
       highestPrice: highest,
