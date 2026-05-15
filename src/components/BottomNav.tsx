@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, Calculator, BookOpen, Compass, MoreHorizontal } from "lucide-react";
+import { Home, BookOpen, Compass, MoreHorizontal } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 
 export function BottomNav() {
@@ -9,11 +9,10 @@ export function BottomNav() {
   const { t } = useTranslation();
 
   const tabs = [
-    { href: "/",           icon: Home,          label: t("nav.home") },
-    { href: "/calculator", icon: Calculator,    label: t("nav.calc") },
-    { href: "/sourcing",   icon: BookOpen,      label: t("nav.sourcing") },
-    { href: "/phrases",    icon: Compass,       label: t("nav.field") },
-    { href: "/more",       icon: MoreHorizontal,label: t("nav.more") },
+    { href: "/",         icon: Home,           label: t("nav.home") },
+    { href: "/sourcing", icon: BookOpen,       label: t("nav.sourcing") },
+    { href: "/phrases",  icon: Compass,        label: t("nav.field") },
+    { href: "/more",     icon: MoreHorizontal, label: t("nav.more") },
   ];
 
   // 제안서 공유 페이지에서는 하단탭 숨김
