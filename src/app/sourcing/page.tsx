@@ -109,6 +109,7 @@ export default function SourcingPage() {
   const [marketLoading, setMarketLoading] = useState(false);
   const [marketResult, setMarketResult] = useState<MarketResult | null>(null);
   const [marketError, setMarketError] = useState<string | null>(null);
+  const [targetMarginForm, setTargetMarginForm] = useState(40);
 
   const handleLocate = async () => {
     setLocating(true);
@@ -771,48 +772,72 @@ export default function SourcingPage() {
                   </div>
                 </div>
 
-                {/* 계산 결과 요약 */}
-                {(form.costCny ?? 0) > 0 && (
-                  <div className="bg-orange-50 px-4 py-3">
-                    <p className="text-xs font-semibold text-orange-400 mb-2 uppercase tracking-wide">계산 결과</p>
-                    <div className="space-y-1 text-sm">
-                      <div className="flex justify-between text-gray-600">
-                        <span>원화원가 ({(form.costCny ?? 0)}CNY × {(form.exchangeRate ?? 0).toFixed(1)})</span>
-                        <span>{calcResult.costKrw.toLocaleString()}원</span>
-                      </div>
-                      {calcResult.agentFee > 0 && (
-                        <div className="flex justify-between text-gray-600">
-                          <span>에이전트 ({((form.agentFeeRate ?? 0) * 100).toFixed(0)}%)</span>
-                          <span>{calcResult.agentFee.toLocaleString()}원</span>
-                        </div>
-                      )}
-                      {calcResult.cbmShipping > 0 && (
-                        <div className="flex justify-between text-gray-600">
-                          <span>운송비 ({(form.cbm ?? 0).toFixed(3)}m³)</span>
-                          <span>{calcResult.cbmShipping.toLocaleString()}원</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between text-gray-600">
-                        <span>관세 ({((form.customsRate ?? 0) * 100).toFixed(0)}%)</span>
-                        <span>{calcResult.customsDuty.toLocaleString()}원</span>
-                      </div>
-                      <div className="flex justify-between text-gray-600">
-                        <span>부가세 (10%)</span>
-                        <span>{calcResult.vat.toLocaleString()}원</span>
-                      </div>
-                      {calcResult.inlandShipping > 0 && (
-                        <div className="flex justify-between text-gray-600">
-                          <span>내륙운송비</span>
-                          <span>{calcResult.inlandShipping.toLocaleString()}원</span>
-                        </div>
-                      )}
-                      <div className="flex justify-between font-bold text-orange-700 text-base pt-1 border-t border-orange-200 mt-1">
-                        <span>예상 매입단가</span>
-                        <span>{formatKrw(calcResult.landedCost)}</span>
-                      </div>
+              </div>
+            );
+          })()}
+
+          {/* 💰 실시간 계산 결과 카드 */}
+          {(form.costCny ?? 0) > 0 && (() => {
+            const cr = calcLandedCost({
+              costCny: form.costCny ?? 0,
+              exchangeRate: form.exchangeRate ?? 193.5,
+              packagingCost: form.packagingCost ?? 0,
+              chinaShipping: form.chinaShipping ?? 0,
+              agentFeeRate: form.agentFeeRate ?? 0,
+              cbm: form.cbm ?? 0,
+              cbmRate: form.cbmRate ?? 90000,
+              hasCoOrigin: form.hasCoOrigin ?? false,
+              coOriginCost: form.coOriginCost ?? 0,
+              customsRate: form.customsRate ?? 0.08,
+              inlandShipping: form.inlandShipping ?? 0,
+            });
+            const sellPrice = Math.ceil(cr.landedCost / (1 - targetMarginForm / 100) / 100) * 100;
+            return (
+              <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-4 text-white shadow-lg">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-bold text-base">📊 원가 계산 결과</h3>
+                  <button
+                    onClick={openFormInCalc}
+                    className="text-xs bg-white/20 px-3 py-1.5 rounded-lg font-medium active:opacity-80"
+                  >
+                    상세 계산기 →
+                  </button>
+                </div>
+
+                {/* 매입단가 */}
+                <div className="mb-3">
+                  <p className="text-orange-200 text-xs mb-0.5">예상 매입단가</p>
+                  <p className="text-4xl font-bold">{formatKrw(cr.landedCost)}</p>
+                  <p className="text-orange-200 text-xs mt-0.5">
+                    원가 {(form.costCny ?? 0)}CNY × {(form.exchangeRate ?? 193.5).toFixed(1)} + 관세 {((form.customsRate ?? 0.08) * 100).toFixed(0)}% + 부가세
+                  </p>
+                </div>
+
+                {/* 목표 마진율 + 판매가 */}
+                <div className="bg-white/15 rounded-xl p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm text-orange-100 font-medium">목표 마진율</span>
+                    <div className="flex gap-1.5">
+                      {[30, 40, 50].map((v) => (
+                        <button
+                          key={v}
+                          onClick={() => setTargetMarginForm(v)}
+                          className={`text-xs px-3 py-1 rounded-lg font-semibold transition-colors ${targetMarginForm === v ? "bg-white text-orange-600" : "bg-white/20 text-white"}`}
+                        >
+                          {v}%
+                        </button>
+                      ))}
                     </div>
                   </div>
-                )}
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-orange-100">권장 판매가</span>
+                    <span className="text-2xl font-bold">{sellPrice.toLocaleString()}원</span>
+                  </div>
+                  <div className="flex items-center justify-between mt-1.5 pt-1.5 border-t border-white/20">
+                    <span className="text-xs text-orange-200">예상 마진</span>
+                    <span className="text-sm font-semibold text-orange-100">+{(sellPrice - cr.landedCost).toLocaleString()}원 ({targetMarginForm}%)</span>
+                  </div>
+                </div>
               </div>
             );
           })()}
