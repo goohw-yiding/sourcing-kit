@@ -264,6 +264,16 @@ export default function SourcingPage() {
 
   const setF = (key: string, value: unknown) => setForm((p) => ({ ...p, [key]: value }));
 
+  const openNewTab = (url: string) => {
+    const a = document.createElement("a");
+    a.href = url;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -818,7 +828,7 @@ export default function SourcingPage() {
       {/* AI 시장조사 모달 (폼에서도 표시) */}
       {showMarket && (
         <div className="fixed inset-0 z-[200] bg-black/60 flex items-end">
-          <div className="bg-[#F4F6FA] w-full max-h-[90vh] rounded-t-3xl overflow-y-auto">
+          <div className="bg-[#F4F6FA] w-full max-h-[90vh] rounded-t-3xl overflow-y-auto overflow-x-hidden">
             <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-indigo-600 px-4 pt-5 pb-4 rounded-t-3xl">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -928,7 +938,7 @@ export default function SourcingPage() {
                         <p className="text-sm font-bold text-gray-700">네이버쇼핑 실제 판매 상품</p>
                       </div>
                       {marketResult.naverItems.slice(0, 4).map((item, i) => (
-                        <button key={i} onClick={() => window.open(item.link, '_blank', 'noopener,noreferrer')}
+                        <button key={i} onClick={() => openNewTab(item.link)}
                           className="w-full flex items-center gap-3 px-4 py-3 border-b border-gray-50 last:border-0 active:bg-gray-50 text-left">
                           {item.image && (
                             // eslint-disable-next-line @next/next/no-img-element
@@ -987,10 +997,10 @@ export default function SourcingPage() {
                     {[
                       { name: "네이버쇼핑", url: marketResult.searchLinks.naver, color: "bg-green-500" },
                       { name: "쿠팡", url: marketResult.searchLinks.coupang, color: "bg-red-500" },
-                      { name: "11번가", url: marketResult.searchLinks.elevenst, color: "bg-orange-500" },
+                      { name: "1688소싱", url: `https://m.1688.com/offer_search.htm?keywords=${encodeURIComponent(marketResult.productNameCn || marketResult.productNameKr)}&language=zh_CN`, color: "bg-orange-500" },
                     ].map((site) => (
                       <button key={site.name}
-                        onClick={() => window.open(site.url, '_blank', 'noopener,noreferrer')}
+                        onClick={() => openNewTab(site.url)}
                         className={`${site.color} text-white text-xs font-bold py-2.5 rounded-xl text-center w-full`}>
                         {site.name}
                       </button>
@@ -1143,7 +1153,7 @@ export default function SourcingPage() {
       {/* 시장조사 모달 */}
       {showMarket && (
         <div className="fixed inset-0 z-[200] bg-black/60 flex items-end">
-          <div className="bg-[#F4F6FA] w-full max-h-[90vh] rounded-t-3xl overflow-y-auto">
+          <div className="bg-[#F4F6FA] w-full max-h-[90vh] rounded-t-3xl overflow-y-auto overflow-x-hidden">
             {/* 헤더 */}
             <div className="sticky top-0 bg-gradient-to-r from-purple-600 to-indigo-600 px-4 pt-5 pb-4 rounded-t-3xl">
               <div className="flex items-center justify-between">
@@ -1257,7 +1267,7 @@ export default function SourcingPage() {
                         <p className="text-sm font-bold text-gray-700">네이버쇼핑 실제 판매 상품</p>
                       </div>
                       {marketResult.naverItems.slice(0, 4).map((item, i) => (
-                        <button key={i} onClick={() => window.open(item.link, '_blank', 'noopener,noreferrer')}
+                        <button key={i} onClick={() => openNewTab(item.link)}
                           className="w-full flex items-center gap-3 px-4 py-3 border-b border-gray-50 last:border-0 active:bg-gray-50 text-left">
                           {item.image && (
                             // eslint-disable-next-line @next/next/no-img-element
@@ -1320,10 +1330,10 @@ export default function SourcingPage() {
                     {[
                       { name: "네이버쇼핑", url: marketResult.searchLinks.naver, color: "bg-green-500" },
                       { name: "쿠팡", url: marketResult.searchLinks.coupang, color: "bg-red-500" },
-                      { name: "11번가", url: marketResult.searchLinks.elevenst, color: "bg-orange-500" },
+                      { name: "1688소싱", url: `https://m.1688.com/offer_search.htm?keywords=${encodeURIComponent(marketResult.productNameCn || marketResult.productNameKr)}&language=zh_CN`, color: "bg-orange-500" },
                     ].map((site) => (
                       <button key={site.name}
-                        onClick={() => window.open(site.url, '_blank', 'noopener,noreferrer')}
+                        onClick={() => openNewTab(site.url)}
                         className={`${site.color} text-white text-xs font-bold py-2.5 rounded-xl text-center w-full`}>
                         {site.name}
                       </button>
