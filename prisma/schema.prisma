@@ -136,6 +136,13 @@ model ProposalItem {
   product    Product  @relation(fields: [productId], references: [id])
 }
 
+model TempImage {
+  id        String   @id @default(cuid())
+  data      String   // base64 data URL
+  mimeType  String   @default("image/jpeg")
+  createdAt DateTime @default(now())
+}
+
 model Order {
   id        String   @id @default(cuid())
   tenantId  String

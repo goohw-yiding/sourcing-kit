@@ -994,17 +994,42 @@ export default function SourcingPage() {
                   </div>
 
                   <div className="grid grid-cols-3 gap-2">
-                    {[
-                      { name: "네이버쇼핑", url: marketResult.searchLinks.naver, color: "bg-green-500" },
-                      { name: "쿠팡", url: marketResult.searchLinks.coupang, color: "bg-red-500" },
-                      { name: "1688소싱", url: `https://m.1688.com/offer_search.htm?keywords=${encodeURIComponent(marketResult.productNameCn || marketResult.productNameKr)}&language=zh_CN`, color: "bg-orange-500" },
-                    ].map((site) => (
-                      <button key={site.name}
-                        onClick={() => openNewTab(site.url)}
-                        className={`${site.color} text-white text-xs font-bold py-2.5 rounded-xl text-center w-full`}>
-                        {site.name}
-                      </button>
-                    ))}
+                    <button onClick={() => openNewTab(marketResult.searchLinks.naver)}
+                      className="bg-green-500 text-white text-xs font-bold py-2.5 rounded-xl text-center w-full">
+                      네이버쇼핑
+                    </button>
+                    <button onClick={() => openNewTab(marketResult.searchLinks.coupang)}
+                      className="bg-red-500 text-white text-xs font-bold py-2.5 rounded-xl text-center w-full">
+                      쿠팡
+                    </button>
+                    <button
+                      onClick={async () => {
+                        // 이미지가 있으면 1688 사진검색, 없으면 텍스트 검색
+                        const imgData = (form.imageUrl as string) || null;
+                        if (imgData && imgData.startsWith("data:")) {
+                          try {
+                            const res = await fetch("/api/temp-image", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({
+                                imageBase64: imgData,
+                                mimeType: imgData.match(/data:(image\/\w+);/)?.[1] || "image/jpeg",
+                              }),
+                            });
+                            const { url } = await res.json();
+                            if (url) {
+                              openNewTab(`https://s.1688.com/youyuan/index.htm?imageAddress=${encodeURIComponent(url)}`);
+                              return;
+                            }
+                          } catch { /* 실패 시 텍스트 검색으로 폴백 */ }
+                        }
+                        // 폴백: 중국어 상품명으로 텍스트 검색
+                        openNewTab(`https://s.1688.com/selloffer/offerlist.htm?keywords=${encodeURIComponent(marketResult.productNameCn || marketResult.productNameKr)}`);
+                      }}
+                      className="bg-orange-500 text-white text-xs font-bold py-2.5 rounded-xl text-center w-full flex items-center justify-center gap-1"
+                    >
+                      📷 1688사진검색
+                    </button>
                   </div>
 
                   <p className="text-[10px] text-gray-400 text-center pb-2">
@@ -1327,17 +1352,42 @@ export default function SourcingPage() {
 
                   {/* 쇼핑몰 바로가기 */}
                   <div className="grid grid-cols-3 gap-2">
-                    {[
-                      { name: "네이버쇼핑", url: marketResult.searchLinks.naver, color: "bg-green-500" },
-                      { name: "쿠팡", url: marketResult.searchLinks.coupang, color: "bg-red-500" },
-                      { name: "1688소싱", url: `https://m.1688.com/offer_search.htm?keywords=${encodeURIComponent(marketResult.productNameCn || marketResult.productNameKr)}&language=zh_CN`, color: "bg-orange-500" },
-                    ].map((site) => (
-                      <button key={site.name}
-                        onClick={() => openNewTab(site.url)}
-                        className={`${site.color} text-white text-xs font-bold py-2.5 rounded-xl text-center w-full`}>
-                        {site.name}
-                      </button>
-                    ))}
+                    <button onClick={() => openNewTab(marketResult.searchLinks.naver)}
+                      className="bg-green-500 text-white text-xs font-bold py-2.5 rounded-xl text-center w-full">
+                      네이버쇼핑
+                    </button>
+                    <button onClick={() => openNewTab(marketResult.searchLinks.coupang)}
+                      className="bg-red-500 text-white text-xs font-bold py-2.5 rounded-xl text-center w-full">
+                      쿠팡
+                    </button>
+                    <button
+                      onClick={async () => {
+                        // 이미지가 있으면 1688 사진검색, 없으면 텍스트 검색
+                        const imgData = (form.imageUrl as string) || null;
+                        if (imgData && imgData.startsWith("data:")) {
+                          try {
+                            const res = await fetch("/api/temp-image", {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({
+                                imageBase64: imgData,
+                                mimeType: imgData.match(/data:(image\/\w+);/)?.[1] || "image/jpeg",
+                              }),
+                            });
+                            const { url } = await res.json();
+                            if (url) {
+                              openNewTab(`https://s.1688.com/youyuan/index.htm?imageAddress=${encodeURIComponent(url)}`);
+                              return;
+                            }
+                          } catch { /* 실패 시 텍스트 검색으로 폴백 */ }
+                        }
+                        // 폴백: 중국어 상품명으로 텍스트 검색
+                        openNewTab(`https://s.1688.com/selloffer/offerlist.htm?keywords=${encodeURIComponent(marketResult.productNameCn || marketResult.productNameKr)}`);
+                      }}
+                      className="bg-orange-500 text-white text-xs font-bold py-2.5 rounded-xl text-center w-full flex items-center justify-center gap-1"
+                    >
+                      📷 1688사진검색
+                    </button>
                   </div>
 
                   <p className="text-[10px] text-gray-400 text-center pb-2">
