@@ -121,6 +121,7 @@ export default function SourcingPage() {
   const [hsLoading, setHsLoading] = useState(false);
   const [showHsPanel, setShowHsPanel] = useState(false);
   const [importNotes, setImportNotes] = useState("");
+  const [hsDescription, setHsDescription] = useState("");
   const [cbmMode, setCbmMode] = useState<"direct" | "box" | "total">("direct");
   const [boxL, setBoxL] = useState(0);
   const [boxW, setBoxW] = useState(0);
@@ -131,6 +132,7 @@ export default function SourcingPage() {
   const [inlandManual, setInlandManual] = useState(false);
   const [showTaxSection, setShowTaxSection] = useState(false);
   const [showShippingSection, setShowShippingSection] = useState(false);
+  const [showSurchargeSection, setShowSurchargeSection] = useState(false);
 
   const handleLocate = async () => {
     setLocating(true);
@@ -154,18 +156,18 @@ export default function SourcingPage() {
     }
   }, []);
 
-  // 환율 자동 로드
-  useEffect(() => {
-    fetch("/api/exchange-rate")
-      .then((r) => r.json())
-      .then((d) => {
-        const rate = d.ttSell || d.rate || 193.5;
-        setCurrentRate(rate);
-        setForm((p) => ({ ...p, exchangeRate: rate }));
-        setRateInfo({ baseRate: d.baseRate || rate, ttSell: d.ttSell || rate, ttBuy: d.ttBuy || rate, usdKrw: d.usdKrw || 1350, date: d.date || "" });
-        if (d.usdKrw) setUsdKrwRate(d.usdKrw);
-      });
+  const fetchRate = useCallback(async () => {
+    try {
+      const d = await fetch("/api/exchange-rate").then(r => r.json());
+      const rate = d.ttSell || d.rate || 193.5;
+      setCurrentRate(rate);
+      setForm((p) => ({ ...p, exchangeRate: rate }));
+      setRateInfo({ baseRate: d.baseRate || rate, ttSell: d.ttSell || rate, ttBuy: d.ttBuy || rate, usdKrw: d.usdKrw || 1350, date: d.date || "" });
+      if (d.usdKrw) setUsdKrwRate(d.usdKrw);
+    } catch { /* ignore */ }
   }, []);
+
+  useEffect(() => { fetchRate(); }, [fetchRate]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -313,6 +315,7 @@ export default function SourcingPage() {
   const selectHs = async (hsCode: string, desc: string) => {
     setShowHsPanel(false);
     setHsQuery(desc);
+    setHsDescription(desc);
     const res = await fetch(`/api/hs/rate?hs=${hsCode}`);
     const data = await res.json();
     setF("customsRate", data.rate);
@@ -329,6 +332,17 @@ export default function SourcingPage() {
     setUsdInput(v);
     const krw = Math.round(v * usdKrwRate);
     setF("costCny", Math.round((krw / ((form.exchangeRate as number) || 193.5)) * 100) / 100);
+  };
+
+  const handleModeChange = (mode: "cny" | "krw" | "usd") => {
+    const cny = (form.costCny as number) || 0;
+    const rate = (form.exchangeRate as number) || 193.5;
+    if (mode === "krw" && cny > 0) {
+      setKrwInput(Math.round(cny * rate));
+    } else if (mode === "usd" && cny > 0) {
+      setUsdInput(Math.round((cny * rate / usdKrwRate) * 100) / 100);
+    }
+    setPriceMode(mode);
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -514,7 +528,7 @@ export default function SourcingPage() {
       cbm: form.cbm ?? 0,
       cbmRate: form.cbmRate ?? 90000,
       hasCoOrigin: form.hasCoOrigin ?? false,
-      coOriginCost: form.coOriginCost ?? 0,
+      coOriginCost: ((form.coOriginCost as number) || 0) / Math.max(boxQty, 1),
       customsRate: form.customsRate ?? 0.08,
       inlandShipping: form.inlandShipping ?? 0,
     });
@@ -597,9 +611,9 @@ export default function SourcingPage() {
               <div className="flex items-center justify-between mb-2">
                 <label className="text-xs text-gray-500">원가 *</label>
                 <div className="flex bg-gray-100 rounded-xl overflow-hidden text-xs font-semibold">
-                  <button onClick={() => setPriceMode("cny")} className={`px-3 py-1 transition-colors ${priceMode === "cny" ? "bg-orange-500 text-white" : "text-gray-500"}`}>¥ 위안</button>
-                  <button onClick={() => setPriceMode("usd")} className={`px-3 py-1 transition-colors ${priceMode === "usd" ? "bg-green-600 text-white" : "text-gray-500"}`}>$ 달러</button>
-                  <button onClick={() => setPriceMode("krw")} className={`px-3 py-1 transition-colors ${priceMode === "krw" ? "bg-orange-500 text-white" : "text-gray-500"}`}>₩ 원</button>
+                  <button onClick={() => handleModeChange("cny")} className={`px-3 py-1 transition-colors ${priceMode === "cny" ? "bg-orange-500 text-white" : "text-gray-500"}`}>¥ 위안</button>
+                  <button onClick={() => handleModeChange("usd")} className={`px-3 py-1 transition-colors ${priceMode === "usd" ? "bg-green-600 text-white" : "text-gray-500"}`}>$ 달러</button>
+                  <button onClick={() => handleModeChange("krw")} className={`px-3 py-1 transition-colors ${priceMode === "krw" ? "bg-orange-500 text-white" : "text-gray-500"}`}>₩ 원</button>
                 </div>
               </div>
               {priceMode === "cny" && (
@@ -729,15 +743,7 @@ export default function SourcingPage() {
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-sm font-semibold text-gray-700">💱 실시간 환율</h3>
                 <button
-                  onClick={() => {
-                    fetch("/api/exchange-rate").then(r => r.json()).then(d => {
-                      const rate = d.ttSell || d.rate || 193.5;
-                      setCurrentRate(rate);
-                      setF("exchangeRate", rate);
-                      setRateInfo({ baseRate: d.baseRate || rate, ttSell: d.ttSell || rate, ttBuy: d.ttBuy || rate, usdKrw: d.usdKrw || 1350, date: d.date || "" });
-                      if (d.usdKrw) setUsdKrwRate(d.usdKrw);
-                    });
-                  }}
+                  onClick={fetchRate}
                   className="text-xs text-blue-500"
                 >
                   갱신
@@ -830,9 +836,14 @@ export default function SourcingPage() {
                     </div>
                   )}
                   {form.hsCode && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 flex items-center justify-between">
-                      <span className="text-sm font-mono font-bold text-blue-700">HS {form.hsCode}</span>
-                      <span className="text-xs text-blue-400">AI 추정</span>
+                    <div className="bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 flex items-center gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-mono font-bold text-blue-700">HS {form.hsCode as string}</span>
+                          <span className="text-xs text-blue-400">AI추정</span>
+                        </div>
+                        {hsDescription && <p className="text-xs text-blue-600 mt-0.5">{hsDescription}</p>}
+                      </div>
                     </div>
                   )}
                   {importNotes && (
@@ -840,29 +851,19 @@ export default function SourcingPage() {
                   )}
                 </div>
 
-                {/* 관세율 + 에이전트 */}
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">관세율 (%)</label>
-                    <input type="number" inputMode="decimal"
-                      value={form.customsRate !== undefined ? ((form.customsRate as number) * 100).toFixed(0) : ""}
-                      onChange={(e) => setF("customsRate", (parseFloat(e.target.value) || 0) / 100)}
-                      placeholder="8"
-                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange-400" />
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">에이전트 (%)</label>
-                    <input type="number" inputMode="decimal"
-                      value={form.agentFeeRate !== undefined ? ((form.agentFeeRate as number) * 100).toFixed(0) : ""}
-                      onChange={(e) => setF("agentFeeRate", (parseFloat(e.target.value) || 0) / 100)}
-                      placeholder="0"
-                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange-400" />
-                  </div>
+                {/* 관세율 */}
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">관세율 (%)</label>
+                  <input type="number" inputMode="decimal"
+                    value={form.customsRate !== undefined ? ((form.customsRate as number) * 100).toFixed(0) : ""}
+                    onChange={(e) => setF("customsRate", (parseFloat(e.target.value) || 0) / 100)}
+                    placeholder="8"
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange-400" />
                 </div>
 
                 {/* 원산지 증명 */}
                 <div className="flex items-center justify-between py-2 border-t border-gray-100">
-                  <label className="text-sm text-gray-600">원산지 증명 (C/O)</label>
+                  <label className="text-sm text-gray-600">원산지 증명 (C/O) (선택)</label>
                   <button onClick={() => setF("hasCoOrigin", !form.hasCoOrigin)}
                     className={`w-12 h-6 rounded-full transition-colors ${form.hasCoOrigin ? "bg-blue-500" : "bg-gray-200"}`}>
                     <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform mx-0.5 ${form.hasCoOrigin ? "translate-x-6" : "translate-x-0"}`} />
@@ -877,6 +878,42 @@ export default function SourcingPage() {
                     <span className="text-xs text-gray-400">원</span>
                   </div>
                 )}
+              </div>
+            )}
+          </div>
+
+          {/* ── 부대비용 ── */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <button onClick={() => setShowSurchargeSection(v => !v)}
+              className="w-full px-4 py-3.5 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-semibold text-gray-700">💼 부대비용</span>
+                {((form.packagingCost as number || 0) > 0 || (form.agentFeeRate as number || 0) > 0) && (
+                  <span className="text-xs bg-purple-100 text-purple-600 px-2 py-0.5 rounded-full">설정됨</span>
+                )}
+              </div>
+              {showSurchargeSection ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
+            </button>
+            {showSurchargeSection && (
+              <div className="px-4 pb-4 border-t border-gray-50 pt-3 space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-xs text-gray-500 mb-1 block">포장비 (원/개)</label>
+                    <input type="number" inputMode="decimal" value={form.packagingCost || ""}
+                      onChange={(e) => setF("packagingCost", parseFloat(e.target.value) || 0)}
+                      placeholder="0"
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-purple-400" />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 mb-1 block">에이전트 수수료 (%)</label>
+                    <input type="number" inputMode="decimal"
+                      value={form.agentFeeRate !== undefined ? ((form.agentFeeRate as number) * 100).toFixed(0) : ""}
+                      onChange={(e) => setF("agentFeeRate", (parseFloat(e.target.value) || 0) / 100)}
+                      placeholder="0"
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-purple-400" />
+                  </div>
+                </div>
+                <p className="text-xs text-gray-400">💡 에이전트 수수료는 원화원가 기준으로 계산됩니다</p>
               </div>
             )}
           </div>
@@ -896,18 +933,13 @@ export default function SourcingPage() {
 
             {showShippingSection && (
               <div className="px-4 pb-4 border-t border-gray-50 pt-3 space-y-3">
-                {/* 포장비 + 중국내 운송비 */}
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">포장비 (원)</label>
-                    <input type="number" inputMode="decimal" value={form.packagingCost || ""} onChange={(e) => setF("packagingCost", parseFloat(e.target.value) || 0)}
-                      placeholder="0" className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none" />
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">중국내 운송비</label>
-                    <input type="number" inputMode="decimal" value={form.chinaShipping || ""} onChange={(e) => setF("chinaShipping", parseFloat(e.target.value) || 0)}
-                      placeholder="0" className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none" />
-                  </div>
+                {/* 중국내 운송비 */}
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">중국내 운송비 (원)</label>
+                  <input type="number" inputMode="decimal" value={form.chinaShipping || ""}
+                    onChange={(e) => setF("chinaShipping", parseFloat(e.target.value) || 0)}
+                    placeholder="0"
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none" />
                 </div>
 
                 {/* CBM 운송비 */}
@@ -1193,6 +1225,7 @@ export default function SourcingPage() {
                           }
                           if (marketResult.hsCode) {
                             setF("hsCode", marketResult.hsCode);
+                            setHsDescription(marketResult.category || "");
                           }
                           setShowMarket(false);
                         }}
@@ -1551,6 +1584,7 @@ export default function SourcingPage() {
                           }
                           if (marketResult.hsCode) {
                             setF("hsCode", marketResult.hsCode);
+                            setHsDescription(marketResult.category || "");
                           }
                           setShowMarket(false);
                         }}
