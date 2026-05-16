@@ -116,6 +116,9 @@ export default function SourcingPage() {
   const [priceMode, setPriceMode] = useState<"cny" | "krw" | "usd">("cny");
   const [krwInput, setKrwInput] = useState(0);
   const [usdInput, setUsdInput] = useState(0);
+  const [packMode, setPackMode] = useState<"cny" | "krw" | "usd">("krw");
+  const [packCnyInput, setPackCnyInput] = useState(0);
+  const [packUsdInput, setPackUsdInput] = useState(0);
   const [usdKrwRate, setUsdKrwRate] = useState(1350);
   const [hsQuery, setHsQuery] = useState("");
   const [hsResults, setHsResults] = useState<{hsCode: string; description: string}[]>([]);
@@ -344,6 +347,25 @@ export default function SourcingPage() {
       setUsdInput(Math.round((cny * rate / usdKrwRate) * 100) / 100);
     }
     setPriceMode(mode);
+  };
+
+  // 포장비 모드 전환 — 기존 값을 자동 환산
+  const handlePackModeChange = (mode: "cny" | "krw" | "usd") => {
+    const krw = (form.packagingCost as number) || 0;
+    const rate = (form.exchangeRate as number) || 193.5;
+    if (mode === "cny" && krw > 0) setPackCnyInput(Math.round((krw / rate) * 100) / 100);
+    else if (mode === "usd" && krw > 0) setPackUsdInput(Math.round((krw / usdKrwRate) * 100) / 100);
+    setPackMode(mode);
+  };
+
+  const handlePackCnyInput = (v: number) => {
+    setPackCnyInput(v);
+    setF("packagingCost", Math.round(v * ((form.exchangeRate as number) || 193.5)));
+  };
+
+  const handlePackUsdInput = (v: number) => {
+    setPackUsdInput(v);
+    setF("packagingCost", Math.round(v * usdKrwRate));
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -924,22 +946,46 @@ export default function SourcingPage() {
             </button>
             {showSurchargeSection && (
               <div className="px-4 pb-4 border-t border-gray-50 pt-3 space-y-3">
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">포장비 (원/개)</label>
+                {/* 포장비 — 통화 선택 */}
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs text-gray-500">포장비 (개당)</label>
+                    <div className="flex bg-gray-100 rounded-xl overflow-hidden text-xs font-semibold">
+                      <button onClick={() => handlePackModeChange("cny")} className={`px-2.5 py-1 transition-colors ${packMode === "cny" ? "bg-orange-500 text-white" : "text-gray-500"}`}>¥ 위안</button>
+                      <button onClick={() => handlePackModeChange("usd")} className={`px-2.5 py-1 transition-colors ${packMode === "usd" ? "bg-green-600 text-white" : "text-gray-500"}`}>$ 달러</button>
+                      <button onClick={() => handlePackModeChange("krw")} className={`px-2.5 py-1 transition-colors ${packMode === "krw" ? "bg-orange-500 text-white" : "text-gray-500"}`}>₩ 원</button>
+                    </div>
+                  </div>
+                  {packMode === "cny" && (
+                    <>
+                      <input type="number" inputMode="decimal" value={packCnyInput || ""}
+                        onChange={(e) => handlePackCnyInput(parseFloat(e.target.value) || 0)}
+                        placeholder="0" className="w-full border border-orange-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange-400" />
+                      {packCnyInput > 0 && <p className="text-xs text-gray-400 mt-0.5">≈ {((form.packagingCost as number) || 0).toLocaleString()}원</p>}
+                    </>
+                  )}
+                  {packMode === "usd" && (
+                    <>
+                      <input type="number" inputMode="decimal" value={packUsdInput || ""}
+                        onChange={(e) => handlePackUsdInput(parseFloat(e.target.value) || 0)}
+                        placeholder="0" className="w-full border border-green-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-green-400" />
+                      {packUsdInput > 0 && <p className="text-xs text-gray-400 mt-0.5">≈ {((form.packagingCost as number) || 0).toLocaleString()}원</p>}
+                    </>
+                  )}
+                  {packMode === "krw" && (
                     <input type="number" inputMode="decimal" value={form.packagingCost || ""}
                       onChange={(e) => setF("packagingCost", parseFloat(e.target.value) || 0)}
-                      placeholder="0"
-                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-purple-400" />
-                  </div>
-                  <div>
-                    <label className="text-xs text-gray-500 mb-1 block">에이전트 수수료 (%)</label>
-                    <input type="number" inputMode="decimal"
-                      value={form.agentFeeRate !== undefined ? ((form.agentFeeRate as number) * 100).toFixed(0) : ""}
-                      onChange={(e) => setF("agentFeeRate", (parseFloat(e.target.value) || 0) / 100)}
-                      placeholder="0"
-                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-purple-400" />
-                  </div>
+                      placeholder="0" className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-purple-400" />
+                  )}
+                </div>
+                {/* 에이전트 수수료 */}
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">에이전트 수수료 (%)</label>
+                  <input type="number" inputMode="decimal"
+                    value={form.agentFeeRate !== undefined ? ((form.agentFeeRate as number) * 100).toFixed(0) : ""}
+                    onChange={(e) => setF("agentFeeRate", (parseFloat(e.target.value) || 0) / 100)}
+                    placeholder="0"
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-purple-400" />
                 </div>
                 <p className="text-xs text-gray-400">💡 에이전트 수수료는 원화원가 기준으로 계산됩니다</p>
               </div>
