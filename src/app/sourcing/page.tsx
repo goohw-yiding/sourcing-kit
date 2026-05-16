@@ -117,8 +117,8 @@ export default function SourcingPage() {
   const [krwInput, setKrwInput] = useState(0);
   const [usdInput, setUsdInput] = useState(0);
   const [packMode, setPackMode] = useState<"cny" | "krw" | "usd">("cny");
-  const [packCnyInput, setPackCnyInput] = useState(0);
-  const [packUsdInput, setPackUsdInput] = useState(0);
+  const [packCnyStr, setPackCnyStr] = useState("");   // 소수점 유지를 위해 string
+  const [packUsdStr, setPackUsdStr] = useState("");   // 소수점 유지를 위해 string
   const [usdKrwRate, setUsdKrwRate] = useState(1350);
   const [hsQuery, setHsQuery] = useState("");
   const [hsResults, setHsResults] = useState<{hsCode: string; description: string}[]>([]);
@@ -130,7 +130,7 @@ export default function SourcingPage() {
   const [boxL, setBoxL] = useState(0);
   const [boxW, setBoxW] = useState(0);
   const [boxH, setBoxH] = useState(0);
-  const [boxQty, setBoxQty] = useState(1);
+  const [boxQty, setBoxQty] = useState(0);
   const [shippingTotal, setShippingTotal] = useState(0);
   const [inlandRate, setInlandRate] = useState(100000);
   const [inlandManual, setInlandManual] = useState(false);
@@ -200,7 +200,7 @@ export default function SourcingPage() {
   // 내륙운송비 자동계산
   useEffect(() => {
     if (!inlandManual && (form.cbm as number ?? 0) > 0 && inlandRate > 0) {
-      setF("inlandShipping", Math.round(((form.cbm as number) / 4) * inlandRate));
+      setF("inlandShipping", Math.round(((form.cbm as number) / 4) * inlandRate / Math.max(boxQty, 1)));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.cbm, inlandRate, inlandManual]);
@@ -357,19 +357,9 @@ export default function SourcingPage() {
   const handlePackModeChange = (mode: "cny" | "krw" | "usd") => {
     const krw = (form.packagingCost as number) || 0;
     const rate = (form.exchangeRate as number) || 193.5;
-    if (mode === "cny" && krw > 0) setPackCnyInput(Math.round((krw / rate) * 100) / 100);
-    else if (mode === "usd" && krw > 0) setPackUsdInput(Math.round((krw / usdKrwRate) * 100) / 100);
+    if (mode === "cny" && krw > 0) setPackCnyStr(String(Math.round((krw / rate) * 100) / 100));
+    else if (mode === "usd" && krw > 0) setPackUsdStr(String(Math.round((krw / usdKrwRate) * 100) / 100));
     setPackMode(mode);
-  };
-
-  const handlePackCnyInput = (v: number) => {
-    setPackCnyInput(v);
-    setF("packagingCost", Math.round(v * ((form.exchangeRate as number) || 193.5)));
-  };
-
-  const handlePackUsdInput = (v: number) => {
-    setPackUsdInput(v);
-    setF("packagingCost", Math.round(v * usdKrwRate));
   };
 
   // 중국내 운송비 — 총액 입력 → 개당 환산
@@ -975,18 +965,32 @@ export default function SourcingPage() {
                   </div>
                   {packMode === "cny" && (
                     <>
-                      <input type="number" inputMode="decimal" value={packCnyInput || ""}
-                        onChange={(e) => handlePackCnyInput(parseFloat(e.target.value) || 0)}
-                        placeholder="0" className="w-full border border-orange-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange-400" />
-                      {packCnyInput > 0 && <p className="text-xs text-gray-400 mt-0.5">≈ {((form.packagingCost as number) || 0).toLocaleString()}원</p>}
+                      <input type="text" inputMode="decimal"
+                        value={packCnyStr}
+                        onChange={(e) => {
+                          const raw = e.target.value;
+                          setPackCnyStr(raw);
+                          const v = parseFloat(raw) || 0;
+                          setF("packagingCost", Math.round(v * ((form.exchangeRate as number) || 193.5)));
+                        }}
+                        placeholder="예: 0.52"
+                        className="w-full border border-orange-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange-400" />
+                      {packCnyStr && parseFloat(packCnyStr) > 0 && <p className="text-xs text-gray-400 mt-0.5">≈ {((form.packagingCost as number) || 0).toLocaleString()}원</p>}
                     </>
                   )}
                   {packMode === "usd" && (
                     <>
-                      <input type="number" inputMode="decimal" value={packUsdInput || ""}
-                        onChange={(e) => handlePackUsdInput(parseFloat(e.target.value) || 0)}
-                        placeholder="0" className="w-full border border-green-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-green-400" />
-                      {packUsdInput > 0 && <p className="text-xs text-gray-400 mt-0.5">≈ {((form.packagingCost as number) || 0).toLocaleString()}원</p>}
+                      <input type="text" inputMode="decimal"
+                        value={packUsdStr}
+                        onChange={(e) => {
+                          const raw = e.target.value;
+                          setPackUsdStr(raw);
+                          const v = parseFloat(raw) || 0;
+                          setF("packagingCost", Math.round(v * usdKrwRate));
+                        }}
+                        placeholder="예: 0.15"
+                        className="w-full border border-green-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-green-400" />
+                      {packUsdStr && parseFloat(packUsdStr) > 0 && <p className="text-xs text-gray-400 mt-0.5">≈ {((form.packagingCost as number) || 0).toLocaleString()}원</p>}
                     </>
                   )}
                   {packMode === "krw" && (
@@ -1030,8 +1034,8 @@ export default function SourcingPage() {
                   <label className="text-xs text-gray-500 mb-1 block">1박스당 수량 (개)</label>
                   <input type="number" inputMode="numeric"
                     value={boxQty || ""}
-                    onChange={(e) => setBoxQty(parseInt(e.target.value) || 1)}
-                    placeholder="1"
+                    onChange={(e) => setBoxQty(parseInt(e.target.value) || 0)}
+                    placeholder="예: 200"
                     className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-base font-semibold focus:outline-none focus:border-blue-400" />
                 </div>
 
@@ -1185,7 +1189,7 @@ export default function SourcingPage() {
                   </div>
                   {!inlandManual && (form.cbm as number ?? 0) > 0 && (
                     <p className="text-xs text-green-700 bg-green-50 rounded-lg px-2 py-1.5">
-                      {(form.cbm as number).toFixed(4)}m³ ÷ 4 × {inlandRate.toLocaleString()}원 = <strong>{Math.round(((form.cbm as number) / 4) * inlandRate).toLocaleString()}원</strong>
+                      {(form.cbm as number).toFixed(4)}m³ ÷ 4 × {inlandRate.toLocaleString()}원 ÷ {Math.max(boxQty, 1)}개 = <strong>{Math.round(((form.cbm as number) / 4) * inlandRate / Math.max(boxQty, 1)).toLocaleString()}원</strong>
                     </p>
                   )}
                   {inlandManual && (
