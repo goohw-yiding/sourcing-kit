@@ -26,7 +26,10 @@ export interface CalcResult {
 
 export function calcLandedCost(input: CalcInput): CalcResult {
   const costKrw = Math.round(input.costCny * input.exchangeRate);
-  const agentFee = Math.round(costKrw * input.agentFeeRate);
+  // agentFeeRate >= 1 → 고정 원화금액, < 1 → 원가 대비 비율(%)
+  const agentFee = input.agentFeeRate >= 1
+    ? Math.round(input.agentFeeRate)
+    : Math.round(costKrw * input.agentFeeRate);
   const cbmShipping = Math.round(input.cbm * input.cbmRate);
   const coOriginCost = input.hasCoOrigin ? Math.round(input.coOriginCost) : 0;
 

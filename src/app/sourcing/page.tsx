@@ -139,6 +139,10 @@ export default function SourcingPage() {
   const [chinaShipCny, setChinaShipCny] = useState(0);
   const [chinaShipUsd, setChinaShipUsd] = useState(0);
   const [cbmStr, setCbmStr] = useState(""); // 소수점 유지를 위해 string
+  // 에이전트 수수료 통화 모드
+  const [agentFeeMode, setAgentFeeMode] = useState<"cny" | "usd" | "krw">("cny");
+  const [agentFeeCnyStr, setAgentFeeCnyStr] = useState("");
+  const [agentFeeUsdStr, setAgentFeeUsdStr] = useState("");
   const [showTaxSection, setShowTaxSection] = useState(false);
   const [showShippingSection, setShowShippingSection] = useState(false);
   const [showSurchargeSection, setShowSurchargeSection] = useState(false);
@@ -374,6 +378,15 @@ export default function SourcingPage() {
 
   const applyChinaShipTotal = (totalKrw: number) => {
     setF("chinaShipping", Math.round(totalKrw / Math.max(boxQty, 1)));
+  };
+
+  // 에이전트 수수료 모드 전환
+  const handleAgentFeeModeChange = (mode: "cny" | "usd" | "krw") => {
+    const krw = (form.agentFeeRate as number >= 1) ? (form.agentFeeRate as number) : 0;
+    const rate = (form.exchangeRate as number) || 193.5;
+    if (mode === "cny" && krw > 0) setAgentFeeCnyStr(String(Math.round((krw / rate) * 100) / 100));
+    else if (mode === "usd" && krw > 0) setAgentFeeUsdStr(String(Math.round((krw / usdKrwRate) * 100) / 100));
+    setAgentFeeMode(mode);
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1002,14 +1015,56 @@ export default function SourcingPage() {
                 </div>
                 {/* 에이전트 수수료 */}
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">에이전트 수수료 (%)</label>
-                  <input type="number" inputMode="decimal"
-                    value={form.agentFeeRate !== undefined ? ((form.agentFeeRate as number) * 100).toFixed(0) : ""}
-                    onChange={(e) => setF("agentFeeRate", (parseFloat(e.target.value) || 0) / 100)}
-                    placeholder="0"
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-purple-400" />
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs text-gray-500">에이전트 수수료 (개당)</label>
+                    <div className="flex bg-gray-100 rounded-xl overflow-hidden text-xs font-semibold">
+                      <button onClick={() => handleAgentFeeModeChange("cny")} className={`px-2.5 py-1 transition-colors ${agentFeeMode === "cny" ? "bg-orange-500 text-white" : "text-gray-500"}`}>¥ 위안</button>
+                      <button onClick={() => handleAgentFeeModeChange("usd")} className={`px-2.5 py-1 transition-colors ${agentFeeMode === "usd" ? "bg-green-600 text-white" : "text-gray-500"}`}>$ 달러</button>
+                      <button onClick={() => handleAgentFeeModeChange("krw")} className={`px-2.5 py-1 transition-colors ${agentFeeMode === "krw" ? "bg-orange-500 text-white" : "text-gray-500"}`}>₩ 원</button>
+                    </div>
+                  </div>
+                  {agentFeeMode === "cny" && (
+                    <>
+                      <input type="text" inputMode="decimal"
+                        value={agentFeeCnyStr}
+                        onChange={(e) => {
+                          const raw = e.target.value;
+                          setAgentFeeCnyStr(raw);
+                          const v = parseFloat(raw) || 0;
+                          setF("agentFeeRate", Math.round(v * ((form.exchangeRate as number) || 193.5)));
+                        }}
+                        placeholder="예: 2.5"
+                        className="w-full border border-orange-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange-400" />
+                      {agentFeeCnyStr && parseFloat(agentFeeCnyStr) > 0 && (
+                        <p className="text-xs text-gray-400 mt-0.5">≈ {((form.agentFeeRate as number) || 0).toLocaleString()}원</p>
+                      )}
+                    </>
+                  )}
+                  {agentFeeMode === "usd" && (
+                    <>
+                      <input type="text" inputMode="decimal"
+                        value={agentFeeUsdStr}
+                        onChange={(e) => {
+                          const raw = e.target.value;
+                          setAgentFeeUsdStr(raw);
+                          const v = parseFloat(raw) || 0;
+                          setF("agentFeeRate", Math.round(v * usdKrwRate));
+                        }}
+                        placeholder="예: 0.5"
+                        className="w-full border border-green-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-green-400" />
+                      {agentFeeUsdStr && parseFloat(agentFeeUsdStr) > 0 && (
+                        <p className="text-xs text-gray-400 mt-0.5">≈ {((form.agentFeeRate as number) || 0).toLocaleString()}원</p>
+                      )}
+                    </>
+                  )}
+                  {agentFeeMode === "krw" && (
+                    <input type="number" inputMode="decimal"
+                      value={(form.agentFeeRate as number) >= 1 ? form.agentFeeRate : ""}
+                      onChange={(e) => setF("agentFeeRate", parseFloat(e.target.value) || 0)}
+                      placeholder="0"
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-purple-400" />
+                  )}
                 </div>
-                <p className="text-xs text-gray-400">💡 에이전트 수수료는 원화원가 기준으로 계산됩니다</p>
               </div>
             )}
           </div>
