@@ -134,6 +134,10 @@ export default function SourcingPage() {
   const [shippingTotal, setShippingTotal] = useState(0);
   const [inlandRate, setInlandRate] = useState(100000);
   const [inlandManual, setInlandManual] = useState(false);
+  // 중국내 운송비 통화 모드
+  const [chinaShipMode, setChinaShipMode] = useState<"cny" | "krw" | "usd">("cny");
+  const [chinaShipCny, setChinaShipCny] = useState(0);
+  const [chinaShipUsd, setChinaShipUsd] = useState(0);
   const [showTaxSection, setShowTaxSection] = useState(false);
   const [showShippingSection, setShowShippingSection] = useState(false);
   const [showSurchargeSection, setShowSurchargeSection] = useState(false);
@@ -366,6 +370,19 @@ export default function SourcingPage() {
   const handlePackUsdInput = (v: number) => {
     setPackUsdInput(v);
     setF("packagingCost", Math.round(v * usdKrwRate));
+  };
+
+  // 중국내 운송비 — 총액 입력 → 개당 환산
+  const handleChinaShipModeChange = (mode: "cny" | "krw" | "usd") => {
+    const rate = (form.exchangeRate as number) || 193.5;
+    const currentKrwTotal = ((form.chinaShipping as number) || 0) * Math.max(boxQty, 1);
+    if (mode === "cny") setChinaShipCny(currentKrwTotal > 0 ? Math.round((currentKrwTotal / rate) * 100) / 100 : 0);
+    else if (mode === "usd") setChinaShipUsd(currentKrwTotal > 0 ? Math.round((currentKrwTotal / usdKrwRate) * 100) / 100 : 0);
+    setChinaShipMode(mode);
+  };
+
+  const applyChinaShipTotal = (totalKrw: number) => {
+    setF("chinaShipping", Math.round(totalKrw / Math.max(boxQty, 1)));
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1006,96 +1023,153 @@ export default function SourcingPage() {
             </button>
 
             {showShippingSection && (
-              <div className="px-4 pb-4 border-t border-gray-50 pt-3 space-y-3">
-                {/* 중국내 운송비 */}
+              <div className="px-4 pb-4 border-t border-gray-50 pt-3 space-y-4">
+
+                {/* ① 1박스당 수량 */}
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">중국내 운송비 (원)</label>
-                  <input type="number" inputMode="decimal" value={form.chinaShipping || ""}
-                    onChange={(e) => setF("chinaShipping", parseFloat(e.target.value) || 0)}
-                    placeholder="0"
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none" />
+                  <label className="text-xs text-gray-500 mb-1 block">1박스당 수량 (개)</label>
+                  <input type="number" inputMode="numeric"
+                    value={boxQty || ""}
+                    onChange={(e) => setBoxQty(parseInt(e.target.value) || 1)}
+                    placeholder="1"
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-base font-semibold focus:outline-none focus:border-blue-400" />
                 </div>
 
-                {/* CBM 운송비 */}
+                {/* ② 중국내 운송비 */}
                 <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <label className="text-xs text-gray-500 font-semibold">해상운송비 (CBM)</label>
-                    <div className="flex bg-gray-100 rounded-lg overflow-hidden text-xs font-medium">
-                      <button onClick={() => setCbmMode("direct")} className={`px-2.5 py-1 ${cbmMode === "direct" ? "bg-blue-500 text-white" : "text-gray-500"}`}>CBM</button>
-                      <button onClick={() => setCbmMode("box")} className={`px-2.5 py-1 ${cbmMode === "box" ? "bg-blue-500 text-white" : "text-gray-500"}`}>박스</button>
-                      <button onClick={() => setCbmMode("total")} className={`px-2.5 py-1 ${cbmMode === "total" ? "bg-blue-500 text-white" : "text-gray-500"}`}>합계</button>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-xs text-gray-500 font-semibold">🚛 중국내 운송비 (박스 총액)</label>
+                    <div className="flex bg-gray-100 rounded-xl overflow-hidden text-xs font-semibold">
+                      <button onClick={() => handleChinaShipModeChange("cny")} className={`px-2.5 py-1 transition-colors ${chinaShipMode === "cny" ? "bg-orange-500 text-white" : "text-gray-500"}`}>¥ 위안</button>
+                      <button onClick={() => handleChinaShipModeChange("usd")} className={`px-2.5 py-1 transition-colors ${chinaShipMode === "usd" ? "bg-green-600 text-white" : "text-gray-500"}`}>$ 달러</button>
+                      <button onClick={() => handleChinaShipModeChange("krw")} className={`px-2.5 py-1 transition-colors ${chinaShipMode === "krw" ? "bg-orange-500 text-white" : "text-gray-500"}`}>₩ 원</button>
                     </div>
                   </div>
-
-                  {cbmMode === "direct" && (
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <label className="text-xs text-gray-400 mb-1 block">CBM (m³)</label>
-                        <input type="number" inputMode="decimal" step="0.0001" value={(form.cbm as number) > 0 ? form.cbm : ""} onChange={(e) => setF("cbm", parseFloat(e.target.value) || 0)}
-                          placeholder="0.0000" className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none" />
-                      </div>
-                      <div>
-                        <label className="text-xs text-gray-400 mb-1 block">CBM 단가 (원/m³)</label>
-                        <input type="number" inputMode="decimal" value={form.cbmRate || ""} onChange={(e) => setF("cbmRate", parseFloat(e.target.value) || 90000)}
-                          placeholder="90000" className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none" />
-                      </div>
-                    </div>
-                  )}
-
-                  {cbmMode === "box" && (
-                    <div className="space-y-2">
-                      <div className="grid grid-cols-3 gap-2">
-                        {([["가로", boxL, setBoxL], ["세로", boxW, setBoxW], ["높이", boxH, setBoxH]] as [string, number, (v:number)=>void][]).map(([label, val, setter]) => (
-                          <div key={label}>
-                            <label className="text-xs text-gray-400 mb-1 block">{label} (cm)</label>
-                            <input type="number" inputMode="decimal" value={val || ""} onChange={(e) => setter(parseFloat(e.target.value) || 0)}
-                              placeholder="40" className="w-full border border-gray-200 rounded-xl px-2 py-2 text-sm text-center focus:outline-none focus:border-blue-400" />
-                          </div>
-                        ))}
-                      </div>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div>
-                          <label className="text-xs text-gray-400 mb-1 block">박스당 수량</label>
-                          <input type="number" inputMode="numeric" value={boxQty || ""} onChange={(e) => setBoxQty(parseInt(e.target.value) || 1)}
-                            placeholder="1" className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none" />
-                        </div>
-                        <div>
-                          <label className="text-xs text-gray-400 mb-1 block">CBM 단가 (원/m³)</label>
-                          <input type="number" inputMode="decimal" value={form.cbmRate || ""} onChange={(e) => setF("cbmRate", parseFloat(e.target.value) || 90000)}
-                            placeholder="90000" className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none" />
-                        </div>
-                      </div>
-                      {boxL > 0 && boxW > 0 && boxH > 0 && boxQty > 0 && (
-                        <div className="bg-blue-50 rounded-xl p-3 text-xs space-y-1">
-                          <div className="flex justify-between text-gray-600">
-                            <span>1개당 CBM</span>
-                            <span className="font-mono">{((boxL * boxW * boxH) / 1_000_000 / boxQty).toFixed(6)} m³</span>
-                          </div>
-                          <div className="flex justify-between font-bold text-blue-700">
-                            <span>개당 운송비</span>
-                            <span>{Math.round(((boxL * boxW * boxH) / 1_000_000 / boxQty) * (form.cbmRate as number || 90000)).toLocaleString()}원</span>
-                          </div>
-                        </div>
+                  {chinaShipMode === "cny" && (
+                    <>
+                      <input type="number" inputMode="decimal"
+                        value={chinaShipCny || ""}
+                        onChange={(e) => {
+                          const v = parseFloat(e.target.value) || 0;
+                          setChinaShipCny(v);
+                          applyChinaShipTotal(Math.round(v * ((form.exchangeRate as number) || 193.5)));
+                        }}
+                        placeholder="0"
+                        className="w-full border border-orange-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange-400" />
+                      {chinaShipCny > 0 && (
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          ≈ {Math.round(chinaShipCny * ((form.exchangeRate as number) || 193.5)).toLocaleString()}원 총액
+                          {boxQty > 1 && <> → 개당 <strong className="text-blue-600">{((form.chinaShipping as number) || 0).toLocaleString()}원</strong></>}
+                        </p>
                       )}
-                    </div>
+                    </>
                   )}
+                  {chinaShipMode === "usd" && (
+                    <>
+                      <input type="number" inputMode="decimal"
+                        value={chinaShipUsd || ""}
+                        onChange={(e) => {
+                          const v = parseFloat(e.target.value) || 0;
+                          setChinaShipUsd(v);
+                          applyChinaShipTotal(Math.round(v * usdKrwRate));
+                        }}
+                        placeholder="0"
+                        className="w-full border border-green-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-green-400" />
+                      {chinaShipUsd > 0 && (
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          ≈ {Math.round(chinaShipUsd * usdKrwRate).toLocaleString()}원 총액
+                          {boxQty > 1 && <> → 개당 <strong className="text-blue-600">{((form.chinaShipping as number) || 0).toLocaleString()}원</strong></>}
+                        </p>
+                      )}
+                    </>
+                  )}
+                  {chinaShipMode === "krw" && (
+                    <>
+                      <input type="number" inputMode="decimal"
+                        value={((form.chinaShipping as number) || 0) * boxQty || ""}
+                        onChange={(e) => applyChinaShipTotal(parseFloat(e.target.value) || 0)}
+                        placeholder="0"
+                        className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-400" />
+                      {(form.chinaShipping as number) > 0 && boxQty > 1 && (
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          개당 <strong className="text-blue-600">{((form.chinaShipping as number) || 0).toLocaleString()}원</strong>
+                        </p>
+                      )}
+                    </>
+                  )}
+                </div>
 
-                  {cbmMode === "total" && (
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <input type="number" inputMode="decimal" value={shippingTotal || ""} onChange={(e) => setShippingTotal(parseFloat(e.target.value) || 0)}
-                          placeholder="0" className="flex-1 border-2 border-blue-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-400" />
-                        <span className="text-sm text-gray-500">원</span>
+                {/* ③ 해상운송비 */}
+                <div>
+                  <label className="text-xs text-gray-500 font-semibold mb-2 block">🚢 해상운송비</label>
+                  {/* CBM 단가 */}
+                  <div className="flex items-center gap-2 mb-2">
+                    <label className="text-xs text-gray-400 whitespace-nowrap">1CBM당 운임</label>
+                    <input type="number" inputMode="decimal"
+                      value={form.cbmRate || ""}
+                      onChange={(e) => setF("cbmRate", parseFloat(e.target.value) || 90000)}
+                      placeholder="90000"
+                      className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-400" />
+                    <span className="text-xs text-gray-400">원</span>
+                  </div>
+                  {/* 박스 사이즈 */}
+                  <div className="bg-gray-50 rounded-xl p-3 space-y-2">
+                    <p className="text-xs text-gray-500">박스 사이즈 (cm) — 입력하면 CBM 자동계산</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {([["가로", boxL, setBoxL], ["세로", boxW, setBoxW], ["높이", boxH, setBoxH]] as [string, number, (v:number)=>void][]).map(([label, val, setter]) => (
+                        <div key={label}>
+                          <label className="text-xs text-gray-400 mb-1 block text-center">{label}</label>
+                          <input type="number" inputMode="decimal"
+                            value={val || ""}
+                            onChange={(e) => {
+                              setter(parseFloat(e.target.value) || 0);
+                              // 박스사이즈 변경 시 CBM 자동 갱신
+                              const l = label === "가로" ? (parseFloat(e.target.value) || 0) : boxL;
+                              const w = label === "세로" ? (parseFloat(e.target.value) || 0) : boxW;
+                              const h = label === "높이" ? (parseFloat(e.target.value) || 0) : boxH;
+                              if (l > 0 && w > 0 && h > 0) {
+                                setF("cbm", Math.round((l * w * h / 1_000_000) * 1_000_000) / 1_000_000);
+                              }
+                            }}
+                            placeholder="0"
+                            className="w-full border border-gray-200 rounded-xl px-2 py-2 text-sm text-center focus:outline-none focus:border-blue-400 bg-white" />
+                        </div>
+                      ))}
+                    </div>
+                    {/* CBM 합계 — 자동 또는 직접 입력 */}
+                    <div className="flex items-center gap-2">
+                      <label className="text-xs text-gray-400 whitespace-nowrap">CBM 합계</label>
+                      <input type="number" inputMode="decimal" step="0.0001"
+                        value={(form.cbm as number) > 0 ? form.cbm : ""}
+                        onChange={(e) => {
+                          setF("cbm", parseFloat(e.target.value) || 0);
+                          // 직접 입력 시 박스 사이즈 초기화
+                          setBoxL(0); setBoxW(0); setBoxH(0);
+                        }}
+                        placeholder="0.0000"
+                        className="flex-1 border-2 border-blue-200 rounded-xl px-3 py-2 text-sm font-mono focus:outline-none focus:border-blue-400 bg-white" />
+                      <span className="text-xs text-gray-400">m³</span>
+                    </div>
+                  </div>
+                  {/* 결과 */}
+                  {(form.cbm as number) > 0 && boxQty > 0 && (
+                    <div className="bg-blue-50 rounded-xl p-3 text-xs space-y-1 mt-2">
+                      <div className="flex justify-between text-gray-600">
+                        <span>박스 CBM × CBM단가</span>
+                        <span>{(form.cbm as number).toFixed(4)} m³ × {((form.cbmRate as number) || 90000).toLocaleString()}원</span>
                       </div>
-                      <p className="text-xs text-gray-400">이 상품 1개의 운송비 합계를 직접 입력</p>
+                      <div className="flex justify-between font-bold text-blue-700">
+                        <span>개당 해상운송비</span>
+                        <span>{Math.round(((form.cbm as number) / Math.max(boxQty, 1)) * ((form.cbmRate as number) || 90000)).toLocaleString()}원</span>
+                      </div>
                     </div>
                   )}
                 </div>
 
-                {/* 한국 내륙운송비 */}
+                {/* ④ 한국 내륙운송비 */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <label className="text-xs text-gray-500 font-semibold">한국 내륙운송비</label>
+                    <label className="text-xs text-gray-500 font-semibold">🇰🇷 한국 내륙운송비</label>
                     <button onClick={() => setInlandManual(v => !v)}
                       className={`text-xs px-2 py-0.5 rounded-full border ${inlandManual ? "bg-gray-200 text-gray-600" : "bg-green-100 text-green-700 border-green-200"}`}>
                       {inlandManual ? "수동입력" : "자동계산 ✓"}
