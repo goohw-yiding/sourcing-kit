@@ -138,6 +138,7 @@ export default function SourcingPage() {
   const [chinaShipMode, setChinaShipMode] = useState<"cny" | "krw" | "usd">("cny");
   const [chinaShipCny, setChinaShipCny] = useState(0);
   const [chinaShipUsd, setChinaShipUsd] = useState(0);
+  const [cbmStr, setCbmStr] = useState(""); // 소수점 유지를 위해 string
   const [showTaxSection, setShowTaxSection] = useState(false);
   const [showShippingSection, setShowShippingSection] = useState(false);
   const [showSurchargeSection, setShowSurchargeSection] = useState(false);
@@ -1132,7 +1133,9 @@ export default function SourcingPage() {
                               const w = label === "세로" ? (parseFloat(e.target.value) || 0) : boxW;
                               const h = label === "높이" ? (parseFloat(e.target.value) || 0) : boxH;
                               if (l > 0 && w > 0 && h > 0) {
-                                setF("cbm", Math.round((l * w * h / 1_000_000) * 1_000_000) / 1_000_000);
+                                const computed = Math.round((l * w * h / 1_000_000) * 1_000_000) / 1_000_000;
+                                setF("cbm", computed);
+                                setCbmStr(String(computed));
                               }
                             }}
                             placeholder="0"
@@ -1143,12 +1146,14 @@ export default function SourcingPage() {
                     {/* CBM 합계 — 자동 또는 직접 입력 */}
                     <div className="flex items-center gap-2">
                       <label className="text-xs text-gray-400 whitespace-nowrap">CBM 합계</label>
-                      <input type="number" inputMode="decimal" step="0.0001"
-                        value={(form.cbm as number) > 0 ? form.cbm : ""}
+                      <input type="text" inputMode="decimal"
+                        value={cbmStr}
                         onChange={(e) => {
-                          setF("cbm", parseFloat(e.target.value) || 0);
-                          // 직접 입력 시 박스 사이즈 초기화
-                          setBoxL(0); setBoxW(0); setBoxH(0);
+                          const raw = e.target.value;
+                          setCbmStr(raw);
+                          const v = parseFloat(raw) || 0;
+                          setF("cbm", v);
+                          if (raw !== "") { setBoxL(0); setBoxW(0); setBoxH(0); }
                         }}
                         placeholder="0.0000"
                         className="flex-1 border-2 border-blue-200 rounded-xl px-3 py-2 text-sm font-mono focus:outline-none focus:border-blue-400 bg-white" />
