@@ -116,7 +116,7 @@ export default function SourcingPage() {
   const [priceMode, setPriceMode] = useState<"cny" | "krw" | "usd">("cny");
   const [krwInput, setKrwInput] = useState(0);
   const [usdInput, setUsdInput] = useState(0);
-  const [packMode, setPackMode] = useState<"cny" | "krw" | "usd">("krw");
+  const [packMode, setPackMode] = useState<"cny" | "krw" | "usd">("cny");
   const [packCnyInput, setPackCnyInput] = useState(0);
   const [packUsdInput, setPackUsdInput] = useState(0);
   const [usdKrwRate, setUsdKrwRate] = useState(1350);
