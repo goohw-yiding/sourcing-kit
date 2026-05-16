@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import { ArrowLeft, Plus, Camera, Search, Trash2, X, Calculator, ChevronDown, ChevronUp, ChevronRight, QrCode, Navigation, Loader2, TrendingUp, ShieldAlert, ExternalLink, Sparkles } from "lucide-react";
+import { ArrowLeft, Plus, Camera, Search, Trash2, X, Calculator, ChevronDown, ChevronUp, ChevronRight, QrCode, Navigation, Loader2, TrendingUp, ShieldAlert, ExternalLink, Sparkles, Image as ImageIcon } from "lucide-react";
 import { QRScanner } from "@/components/QRScanner";
 import { CbmCalculator } from "@/components/CbmCalculator";
 import Link from "next/link";
@@ -103,6 +103,7 @@ export default function SourcingPage() {
   const [locating, setLocating] = useState(false);
   const [showCbmCalc, setShowCbmCalc] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const imageFileRef = useRef<File | null>(null);
   const [showMarket, setShowMarket] = useState(false);
   const [marketLoading, setMarketLoading] = useState(false);
@@ -542,10 +543,20 @@ export default function SourcingPage() {
           <h1 className="text-lg font-bold">상품 추가</h1>
         </header>
         <div className="px-4 py-4 space-y-3">
+          {/* 갤러리 선택용 input */}
           <input
             ref={fileInputRef}
             type="file"
             accept="image/*"
+            className="hidden"
+            onChange={handleImageChange}
+          />
+          {/* 카메라 직접 촬영용 input */}
+          <input
+            ref={cameraInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
             className="hidden"
             onChange={handleImageChange}
           />
@@ -570,19 +581,36 @@ export default function SourcingPage() {
               </button>
             </div>
           ) : (
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex flex-col items-center justify-center py-10 gap-3 text-white active:opacity-80 shadow-lg"
-            >
-              <div className="bg-white/20 rounded-full p-4">
-                <Camera className="w-9 h-9" />
-              </div>
-              <div className="text-center">
-                <div className="text-base font-bold">사진 촬영 / 선택</div>
-                <div className="text-xs text-blue-200 mt-0.5">탭하여 카메라 열기</div>
-              </div>
-            </button>
+            <div className="flex gap-3">
+              {/* 카메라 직접 촬영 */}
+              <button
+                type="button"
+                onClick={() => cameraInputRef.current?.click()}
+                className="flex-1 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex flex-col items-center justify-center py-8 gap-2 text-white active:opacity-80 shadow-lg"
+              >
+                <div className="bg-white/20 rounded-full p-3">
+                  <Camera className="w-7 h-7" />
+                </div>
+                <div className="text-center">
+                  <div className="text-sm font-bold">카메라</div>
+                  <div className="text-[10px] text-blue-200 mt-0.5">직접 촬영</div>
+                </div>
+              </button>
+              {/* 갤러리 선택 */}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="flex-1 bg-gradient-to-br from-slate-500 to-slate-700 rounded-2xl flex flex-col items-center justify-center py-8 gap-2 text-white active:opacity-80 shadow-lg"
+              >
+                <div className="bg-white/20 rounded-full p-3">
+                  <ImageIcon className="w-7 h-7" />
+                </div>
+                <div className="text-center">
+                  <div className="text-sm font-bold">갤러리</div>
+                  <div className="text-[10px] text-slate-300 mt-0.5">사진 선택</div>
+                </div>
+              </button>
+            </div>
           )}
 
           {/* ── 1. 기본 정보 ── */}
