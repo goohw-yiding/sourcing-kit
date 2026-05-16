@@ -92,6 +92,7 @@ model Product {
   supplier       Supplier? @relation(fields: [supplierId], references: [id])
   createdBy      User?     @relation(fields: [createdById], references: [id])
   proposalItems  ProposalItem[]
+  orders         Order[]
 }
 
 model Buyer {
@@ -147,14 +148,17 @@ model Order {
   id        String   @id @default(cuid())
   tenantId  String
   buyerId   String?
+  productId String?
   orderNo   String?
   status    String   @default("ordered")
+  quantity  Int?
   totalCny  Float?
   totalKrw  Float?
   memo      String?
   orderedAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  tenant    Tenant  @relation(fields: [tenantId], references: [id])
-  buyer     Buyer?  @relation(fields: [buyerId], references: [id])
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  buyer     Buyer?   @relation(fields: [buyerId], references: [id])
+  product   Product? @relation(fields: [productId], references: [id])
 }

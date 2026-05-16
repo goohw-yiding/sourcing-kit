@@ -67,9 +67,10 @@ interface Product {
 }
 
 const STATUS_LABELS: Record<string, { label: string; color: string; dot: string }> = {
-  sourcing: { label: "검토중", color: "bg-amber-100 text-amber-700", dot: "bg-amber-400" },
-  proposed: { label: "제안완료", color: "bg-blue-100 text-blue-700", dot: "bg-blue-500" },
-  ordered: { label: "발주완료", color: "bg-emerald-100 text-emerald-700", dot: "bg-emerald-500" },
+  sourcing:  { label: "시장조사중", color: "bg-amber-100 text-amber-700",   dot: "bg-amber-400"  },
+  proposed:  { label: "제안완료",   color: "bg-blue-100 text-blue-700",    dot: "bg-blue-500"   },
+  ordered:   { label: "발주완료",   color: "bg-emerald-100 text-emerald-700", dot: "bg-emerald-500" },
+  shipped:   { label: "선적완료",   color: "bg-gray-100 text-gray-600",    dot: "bg-gray-400"   },
 };
 
 const DEFAULT_FORM = {
@@ -143,6 +144,10 @@ export default function SourcingPage() {
   const [agentFeeMode, setAgentFeeMode] = useState<"cny" | "usd" | "krw">("cny");
   const [agentFeeCnyStr, setAgentFeeCnyStr] = useState("");
   const [agentFeeUsdStr, setAgentFeeUsdStr] = useState("");
+  // 발주 모달
+  const [showOrderModal, setShowOrderModal] = useState(false);
+  const [orderForm, setOrderForm] = useState({ quantity: "", totalCny: "", memo: "" });
+  const [orderSaving, setOrderSaving] = useState(false);
   const [showTaxSection, setShowTaxSection] = useState(false);
   const [showShippingSection, setShowShippingSection] = useState(false);
   const [showSurchargeSection, setShowSurchargeSection] = useState(false);
@@ -230,7 +235,8 @@ export default function SourcingPage() {
     });
 
   const save = async () => {
-    if (!form.nameKr || !form.costCny) return;
+    if (!form.nameKr?.trim()) { alert("상품명을 입력해주세요"); return; }
+    if (!((form.costCny as number) > 0)) { alert("원가를 입력해주세요"); return; }
     setSaving(true);
     try {
       const res = await fetch("/api/products", {
@@ -241,11 +247,18 @@ export default function SourcingPage() {
           supplierName: (form as Record<string, unknown>)._supplierName || undefined,
         }),
       });
+      if (!res.ok) { alert("저장에 실패했습니다. 다시 시도해주세요."); return; }
       const created = await res.json();
       setItems((prev) => [created, ...prev]);
       setShowForm(false);
       setForm(DEFAULT_FORM);
       setImagePreview(null);
+      // 상태 초기화
+      setPriceMode("cny"); setKrwInput(0); setUsdInput(0);
+      setPackMode("cny"); setPackCnyStr(""); setPackUsdStr("");
+      setCbmStr(""); setBoxL(0); setBoxW(0); setBoxH(0); setBoxQty(0);
+      setAgentFeeMode("cny"); setAgentFeeCnyStr(""); setAgentFeeUsdStr("");
+      setChinaShipMode("cny"); setChinaShipCny(0); setChinaShipUsd(0);
     } finally {
       setSaving(false);
     }
@@ -298,6 +311,50 @@ export default function SourcingPage() {
     await fetch(`/api/products/${id}`, { method: "DELETE" });
     setItems((prev) => prev.filter((i) => i.id !== id));
     setSelected(null);
+  };
+
+  const updateStatus = async (id: string, status: string, extra?: object) => {
+    const target = items.find(i => i.id === id) ?? selected;
+    if (!target) return;
+    const res = await fetch(`/api/products/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...target, ...extra, status }),
+    });
+    if (!res.ok) return;
+    const updated = await res.json();
+    setItems((prev) => prev.map((i) => i.id === id ? updated : i));
+    setSelected(updated);
+  };
+
+  const submitOrder = async () => {
+    if (!selected) return;
+    if (!orderForm.quantity) { alert("수량을 입력해주세요"); return; }
+    setOrderSaving(true);
+    try {
+      // 상품 상태 발주완료로 변경
+      await updateStatus(selected.id, "ordered");
+      // 발주 기록 저장 (memo에 상세 포함)
+      const memo = [
+        orderForm.memo,
+        `수량: ${orderForm.quantity}개`,
+        orderForm.totalCny ? `발주금액: ¥${orderForm.totalCny}` : "",
+      ].filter(Boolean).join(" / ");
+      await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "ordered",
+          totalCny: parseFloat(orderForm.totalCny) || null,
+          memo,
+          buyerId: null,
+        }),
+      });
+      setShowOrderModal(false);
+      setOrderForm({ quantity: "", totalCny: "", memo: "" });
+    } finally {
+      setOrderSaving(false);
+    }
   };
 
   const setF = (key: string, value: unknown) => setForm((p) => ({ ...p, [key]: value }));
@@ -531,32 +588,131 @@ export default function SourcingPage() {
             계산기에서 수정하기
           </button>
 
-          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-            <p className="text-xs text-gray-500 mb-2">상태 변경</p>
-            <div className="flex gap-2">
-              {[
-                { key: "sourcing", label: "검토중", color: "bg-gray-100 text-gray-700 border-gray-200" },
-                { key: "proposed", label: "제안완료", color: "bg-blue-100 text-blue-700 border-blue-200" },
-                { key: "ordered", label: "발주완료", color: "bg-green-100 text-green-700 border-green-200" },
-              ].map((s) => (
+          {/* ── 다음 단계 액션 ── */}
+          <div className="space-y-2">
+            {/* 시장조사중: 제안서 만들기 + 발주하기 */}
+            {selected.status === "sourcing" && (
+              <>
                 <button
-                  key={s.key}
-                  onClick={async () => {
-                    await fetch(`/api/products/${selected.id}`, {
-                      method: "PUT",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ ...selected, status: s.key }),
-                    });
-                    setSelected({ ...selected, status: s.key });
-                    setItems((prev) => prev.map((i) => i.id === selected.id ? { ...i, status: s.key } : i));
-                  }}
-                  className={`flex-1 py-2 rounded-xl text-sm font-medium border-2 transition-all ${selected.status === s.key ? s.color + " border-2" : "bg-white text-gray-400 border-gray-100"}`}
+                  onClick={() => { setShowOrderModal(true); setOrderForm({ quantity: "", totalCny: "", memo: "" }); }}
+                  className="w-full bg-emerald-500 text-white rounded-2xl py-4 font-bold text-base flex items-center justify-center gap-2 active:opacity-80"
                 >
-                  {selected.status === s.key && "✓ "}{s.label}
+                  📦 발주하기
                 </button>
-              ))}
-            </div>
+                <button
+                  onClick={() => router.push("/proposals")}
+                  className="w-full bg-blue-500 text-white rounded-2xl py-4 font-bold text-base flex items-center justify-center gap-2 active:opacity-80"
+                >
+                  📋 제안서 만들기
+                </button>
+              </>
+            )}
+            {/* 제안완료: 발주하기 */}
+            {selected.status === "proposed" && (
+              <button
+                onClick={() => { setShowOrderModal(true); setOrderForm({ quantity: "", totalCny: "", memo: "" }); }}
+                className="w-full bg-emerald-500 text-white rounded-2xl py-4 font-bold text-base flex items-center justify-center gap-2 active:opacity-80"
+              >
+                📦 발주하기
+              </button>
+            )}
+            {/* 발주완료: 선적완료 */}
+            {selected.status === "ordered" && (
+              <button
+                onClick={() => updateStatus(selected.id, "shipped")}
+                className="w-full bg-slate-700 text-white rounded-2xl py-4 font-bold text-base flex items-center justify-center gap-2 active:opacity-80"
+              >
+                🚢 선적완료 처리
+              </button>
+            )}
+            {/* 선적완료 */}
+            {selected.status === "shipped" && (
+              <div className="bg-gray-100 rounded-2xl py-4 text-center text-gray-500 font-semibold">
+                ✅ 선적완료
+              </div>
+            )}
+            {/* 상태 되돌리기 (소형) */}
+            {selected.status !== "sourcing" && (
+              <button
+                onClick={() => {
+                  const prev = selected.status === "shipped" ? "ordered"
+                    : selected.status === "ordered" ? "proposed"
+                    : "sourcing";
+                  updateStatus(selected.id, prev);
+                }}
+                className="w-full text-xs text-gray-400 py-2 text-center"
+              >
+                ← 이전 단계로 되돌리기
+              </button>
+            )}
           </div>
+
+          {/* 발주 모달 */}
+          {showOrderModal && (
+            <div className="fixed inset-0 z-50 bg-black/60 flex items-end" onClick={() => setShowOrderModal(false)}>
+              <div className="bg-white w-full rounded-t-3xl px-5 pt-5 pb-8 space-y-4" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center justify-between">
+                  <h3 className="font-bold text-lg">📦 발주하기</h3>
+                  <button onClick={() => setShowOrderModal(false)} className="text-gray-400 p-1"><X className="w-5 h-5" /></button>
+                </div>
+                {/* 상품 + 거래처 표시 */}
+                <div className="bg-gray-50 rounded-2xl p-3 space-y-1">
+                  <div className="font-semibold text-gray-800 text-sm">{selected.nameKr}</div>
+                  {selected.supplier && <div className="text-xs text-gray-500">🏪 {selected.supplier.name}</div>}
+                  <div className="text-xs text-orange-500 font-medium">¥{selected.costCny} / 매입단가 {formatKrw(calc.landedCost)}</div>
+                </div>
+                {/* 수량 */}
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">수량 *</label>
+                  <input
+                    type="number" inputMode="numeric"
+                    value={orderForm.quantity}
+                    onChange={e => setOrderForm(p => ({ ...p, quantity: e.target.value }))}
+                    placeholder="예: 200"
+                    className="w-full border-2 border-emerald-200 rounded-xl px-3 py-3 text-lg font-bold focus:outline-none focus:border-emerald-400"
+                    autoFocus
+                  />
+                </div>
+                {/* 발주금액 */}
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">발주금액 (위안, 선택)</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text" inputMode="decimal"
+                      value={orderForm.totalCny}
+                      onChange={e => setOrderForm(p => ({ ...p, totalCny: e.target.value }))}
+                      placeholder="예: 1000"
+                      className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-400"
+                    />
+                    <span className="text-sm text-gray-400">위안</span>
+                  </div>
+                  {orderForm.quantity && orderForm.totalCny && (
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      개당 ¥{(parseFloat(orderForm.totalCny) / parseInt(orderForm.quantity)).toFixed(2)}
+                    </p>
+                  )}
+                </div>
+                {/* 메모 */}
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block">메모 (선택)</label>
+                  <input
+                    type="text"
+                    value={orderForm.memo}
+                    onChange={e => setOrderForm(p => ({ ...p, memo: e.target.value }))}
+                    placeholder="색상, 사이즈, 특이사항 등"
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-400"
+                  />
+                </div>
+                <button
+                  onClick={submitOrder}
+                  disabled={orderSaving}
+                  className="w-full bg-emerald-500 text-white rounded-2xl py-4 font-bold text-base disabled:opacity-50"
+                >
+                  {orderSaving ? "처리 중..." : "발주 확정"}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -1604,10 +1760,11 @@ export default function SourcingPage() {
         <div className="flex items-center gap-2">
         <div className="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none flex-1">
           {[
-            { key: "all", label: `전체 ${items.length}` },
-            { key: "sourcing", label: `검토중 ${items.filter(i => i.status === "sourcing").length}` },
-            { key: "proposed", label: `제안완료 ${items.filter(i => i.status === "proposed").length}` },
-            { key: "ordered", label: `발주완료 ${items.filter(i => i.status === "ordered").length}` },
+            { key: "all",      label: `전체 ${items.length}` },
+            { key: "sourcing", label: `시장조사 ${items.filter(i => i.status === "sourcing").length}` },
+            { key: "proposed", label: `제안 ${items.filter(i => i.status === "proposed").length}` },
+            { key: "ordered",  label: `발주 ${items.filter(i => i.status === "ordered").length}` },
+            { key: "shipped",  label: `선적 ${items.filter(i => i.status === "shipped").length}` },
           ].map((f) => (
             <button
               key={f.key}
