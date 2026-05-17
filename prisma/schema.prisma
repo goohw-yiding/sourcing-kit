@@ -145,18 +145,21 @@ model TempImage {
 }
 
 model Order {
-  id        String   @id @default(cuid())
-  tenantId  String
-  buyerId   String?
-  productId String?
-  orderNo   String?
-  status    String   @default("ordered")
-  quantity  Int?
-  totalCny  Float?
-  totalKrw  Float?
-  memo      String?
-  orderedAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              String    @id @default(cuid())
+  tenantId        String
+  buyerId         String?
+  productId       String?
+  orderNo         String?
+  status          String    @default("ordered")
+  quantity        Int?
+  unitPriceCny    Float?    // 실제 발주 단가 (CNY)
+  totalCny        Float?    // 총 발주금액 (CNY)
+  totalKrw        Float?    // 총 원화 환산
+  memo            String?
+  orderedAt       DateTime  @default(now())   // 발주일
+  shippedAt       DateTime?                   // 중국내 선적일
+  expectedArrival DateTime?                   // 입고예정일
+  updatedAt       DateTime  @updatedAt
 
   tenant    Tenant   @relation(fields: [tenantId], references: [id])
   buyer     Buyer?   @relation(fields: [buyerId], references: [id])

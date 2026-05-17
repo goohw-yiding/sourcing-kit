@@ -41,6 +41,19 @@ interface MarketResult {
   searchLinks: { naver: string; coupang: string; elevenst: string };
 }
 
+interface OrderRecord {
+  id: string;
+  status: string;
+  quantity: number | null;
+  unitPriceCny: number | null;
+  totalCny: number | null;
+  totalKrw: number | null;
+  memo: string | null;
+  orderedAt: string;
+  shippedAt: string | null;
+  expectedArrival: string | null;
+}
+
 interface Product {
   id: string;
   nameKr: string;
@@ -66,11 +79,13 @@ interface Product {
   landedCost?: number | null;
 }
 
-const STATUS_LABELS: Record<string, { label: string; color: string; dot: string }> = {
-  sourcing:  { label: "시장조사중", color: "bg-amber-100 text-amber-700",   dot: "bg-amber-400"  },
-  proposed:  { label: "제안완료",   color: "bg-blue-100 text-blue-700",    dot: "bg-blue-500"   },
-  ordered:   { label: "발주완료",   color: "bg-emerald-100 text-emerald-700", dot: "bg-emerald-500" },
-  shipped:   { label: "선적완료",   color: "bg-gray-100 text-gray-600",    dot: "bg-gray-400"   },
+const STATUS_LABELS: Record<string, { label: string; color: string; dot: string; emoji: string }> = {
+  sourcing:  { label: "시장조사",   color: "bg-amber-100 text-amber-700",    dot: "bg-amber-400",   emoji: "🔍" },
+  proposed:  { label: "제안완료",   color: "bg-blue-100 text-blue-700",      dot: "bg-blue-500",    emoji: "📋" },
+  ordered:   { label: "발주완료",   color: "bg-orange-100 text-orange-700",  dot: "bg-orange-500",  emoji: "📦" },
+  shipping:  { label: "중국내 선적", color: "bg-purple-100 text-purple-700", dot: "bg-purple-500",  emoji: "🚢" },
+  arrived:   { label: "입고완료",   color: "bg-emerald-100 text-emerald-700", dot: "bg-emerald-500", emoji: "✅" },
+  shipped:   { label: "선적완료",   color: "bg-purple-100 text-purple-700",  dot: "bg-purple-400",  emoji: "🚢" },
 };
 
 const DEFAULT_FORM = {
@@ -154,8 +169,20 @@ export default function SourcingPage() {
   const [cn1688Loading, setCn1688Loading] = useState(false);
   // 발주 모달
   const [showOrderModal, setShowOrderModal] = useState(false);
-  const [orderForm, setOrderForm] = useState({ quantity: "", totalCny: "", memo: "" });
+  const [orderForm, setOrderForm] = useState({
+    unitPriceCny: "",       // 실제 발주 단가 (CNY)
+    quantity: "",           // 수량
+    orderedAt: new Date().toISOString().slice(0, 10),  // 발주일
+    expectedArrival: "",    // 입고예정일
+    memo: "",               // 메모
+    updateCostCny: false,   // 원가계산서도 업데이트
+  });
   const [orderSaving, setOrderSaving] = useState(false);
+  const [orderHistory, setOrderHistory] = useState<OrderRecord[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  // 선적 날짜 입력 모달
+  const [showShipModal, setShowShipModal] = useState(false);
+  const [shipDate, setShipDate] = useState(new Date().toISOString().slice(0, 10));
   const [showTaxSection, setShowTaxSection] = useState(false);
   const [showShippingSection, setShowShippingSection] = useState(false);
   const [showSurchargeSection, setShowSurchargeSection] = useState(false);
@@ -228,7 +255,9 @@ export default function SourcingPage() {
   const filtered = items
     .filter((i) => {
       const matchSearch = i.nameKr.includes(search) || i.nameCn?.includes(search) || i.supplier?.name?.includes(search);
-      const matchStatus = statusFilter === "all" || i.status === statusFilter;
+      const matchStatus = statusFilter === "all"
+        || (statusFilter === "shipping" && (i.status === "shipping" || i.status === "shipped"))
+        || i.status === statusFilter;
       return matchSearch && matchStatus;
     })
     .sort((a, b) => {
@@ -337,34 +366,87 @@ export default function SourcingPage() {
     setSelected(updated);
   };
 
+  const loadOrderHistory = async (productId: string) => {
+    setHistoryLoading(true);
+    try {
+      const res = await fetch(`/api/orders?productId=${productId}`);
+      setOrderHistory(await res.json());
+    } finally {
+      setHistoryLoading(false);
+    }
+  };
+
   const submitOrder = async () => {
     if (!selected) return;
     if (!orderForm.quantity) { alert("수량을 입력해주세요"); return; }
+    if (!orderForm.unitPriceCny) { alert("발주 단가를 입력해주세요"); return; }
     setOrderSaving(true);
     try {
-      // 상품 상태 발주완료로 변경
-      await updateStatus(selected.id, "ordered");
-      // 발주 기록 저장 (memo에 상세 포함)
-      const memo = [
-        orderForm.memo,
-        `수량: ${orderForm.quantity}개`,
-        orderForm.totalCny ? `발주금액: ¥${orderForm.totalCny}` : "",
-      ].filter(Boolean).join(" / ");
-      await fetch("/api/orders", {
+      const qty = parseInt(orderForm.quantity);
+      const unitPrice = parseFloat(orderForm.unitPriceCny);
+      const totalCny = qty * unitPrice;
+      const totalKrw = totalCny * (selected.exchangeRate || 193.5);
+
+      // 1. 발주 기록 저장
+      const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          productId: selected.id,
           status: "ordered",
-          totalCny: parseFloat(orderForm.totalCny) || null,
-          memo,
-          buyerId: null,
+          quantity: qty,
+          unitPriceCny: unitPrice,
+          totalCny,
+          totalKrw,
+          memo: orderForm.memo || null,
+          orderedAt: orderForm.orderedAt,
+          expectedArrival: orderForm.expectedArrival || null,
         }),
       });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        alert(`발주 저장 실패\n${err.error || res.status}`);
+        return;
+      }
+
+      // 2. 상품 상태 → 발주완료
+      const productExtra: Record<string, unknown> = { status: "ordered" };
+      // 원가계산서도 업데이트 옵션
+      if (orderForm.updateCostCny && unitPrice !== selected.costCny) {
+        productExtra.costCny = unitPrice;
+      }
+      await updateStatus(selected.id, "ordered", productExtra);
+
+      // 3. 이력 새로고침
+      await loadOrderHistory(selected.id);
+
       setShowOrderModal(false);
-      setOrderForm({ quantity: "", totalCny: "", memo: "" });
+      setOrderForm({
+        unitPriceCny: "",
+        quantity: "",
+        orderedAt: new Date().toISOString().slice(0, 10),
+        expectedArrival: "",
+        memo: "",
+        updateCostCny: false,
+      });
     } finally {
       setOrderSaving(false);
     }
+  };
+
+  const submitShipping = async () => {
+    if (!selected) return;
+    await updateStatus(selected.id, "shipping");
+    // 최신 발주에 선적일 기록
+    if (orderHistory.length > 0) {
+      await fetch(`/api/orders/${orderHistory[0].id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "shipping", shippedAt: shipDate }),
+      });
+      await loadOrderHistory(selected.id);
+    }
+    setShowShipModal(false);
   };
 
   const setF = (key: string, value: unknown) => setForm((p) => ({ ...p, [key]: value }));
@@ -549,8 +631,8 @@ export default function SourcingPage() {
         <header className="text-white px-5 pt-14 pb-5 flex items-center gap-3 bg-[var(--primary)]">
           <button onClick={() => setSelected(null)} className="p-1"><ArrowLeft className="w-5 h-5" /></button>
           <h1 className="text-lg font-bold flex-1">{selected.nameKr}</h1>
-          <span className={`text-xs px-2 py-1 rounded-full ${STATUS_LABELS[selected.status]?.color || ""}`}>
-            {STATUS_LABELS[selected.status]?.label}
+          <span className={`text-xs px-2 py-1 rounded-full font-medium ${STATUS_LABELS[selected.status]?.color || "bg-gray-100 text-gray-500"}`}>
+            {STATUS_LABELS[selected.status]?.emoji} {STATUS_LABELS[selected.status]?.label}
           </span>
           <button onClick={() => del(selected.id)} className="p-1.5"><Trash2 className="w-4 h-4" /></button>
         </header>
@@ -641,57 +723,83 @@ export default function SourcingPage() {
             계산기에서 수정하기
           </button>
 
-          {/* ── 다음 단계 액션 ── */}
+          {/* ── 단계 액션 버튼 ── */}
           <div className="space-y-2">
-            {/* 시장조사중: 제안서 만들기 + 발주하기 */}
-            {selected.status === "sourcing" && (
+            {/* 시장조사 / 제안완료 → 발주하기 */}
+            {(selected.status === "sourcing" || selected.status === "proposed") && (
               <>
                 <button
-                  onClick={() => { setShowOrderModal(true); setOrderForm({ quantity: "", totalCny: "", memo: "" }); }}
-                  className="w-full bg-emerald-500 text-white rounded-2xl py-4 font-bold text-base flex items-center justify-center gap-2 active:opacity-80"
+                  onClick={() => {
+                    setShowOrderModal(true);
+                    setOrderForm({
+                      unitPriceCny: String(selected.costCny || ""),
+                      quantity: selected.moq ? String(selected.moq) : "",
+                      orderedAt: new Date().toISOString().slice(0, 10),
+                      expectedArrival: "",
+                      memo: "",
+                      updateCostCny: false,
+                    });
+                  }}
+                  className="w-full bg-orange-500 text-white rounded-2xl py-4 font-bold text-base flex items-center justify-center gap-2 active:opacity-80 shadow-sm"
                 >
                   📦 발주하기
                 </button>
-                <button
-                  onClick={() => router.push("/proposals")}
-                  className="w-full bg-blue-500 text-white rounded-2xl py-4 font-bold text-base flex items-center justify-center gap-2 active:opacity-80"
-                >
-                  📋 제안서 만들기
-                </button>
+                {selected.status === "sourcing" && (
+                  <button
+                    onClick={() => router.push("/proposals")}
+                    className="w-full bg-blue-500 text-white rounded-2xl py-4 font-bold text-base flex items-center justify-center gap-2 active:opacity-80"
+                  >
+                    📋 제안서 만들기
+                  </button>
+                )}
               </>
             )}
-            {/* 제안완료: 발주하기 */}
-            {selected.status === "proposed" && (
-              <button
-                onClick={() => { setShowOrderModal(true); setOrderForm({ quantity: "", totalCny: "", memo: "" }); }}
-                className="w-full bg-emerald-500 text-white rounded-2xl py-4 font-bold text-base flex items-center justify-center gap-2 active:opacity-80"
-              >
-                📦 발주하기
-              </button>
-            )}
-            {/* 발주완료: 선적완료 */}
+            {/* 발주완료 → 중국내 선적 */}
             {selected.status === "ordered" && (
               <button
-                onClick={() => updateStatus(selected.id, "shipped")}
-                className="w-full bg-slate-700 text-white rounded-2xl py-4 font-bold text-base flex items-center justify-center gap-2 active:opacity-80"
+                onClick={() => { setShowShipModal(true); setShipDate(new Date().toISOString().slice(0, 10)); }}
+                className="w-full bg-purple-600 text-white rounded-2xl py-4 font-bold text-base flex items-center justify-center gap-2 active:opacity-80 shadow-sm"
               >
-                🚢 선적완료 처리
+                🚢 중국내 선적 처리
               </button>
             )}
-            {/* 선적완료 */}
-            {selected.status === "shipped" && (
-              <div className="bg-gray-100 rounded-2xl py-4 text-center text-gray-500 font-semibold">
-                ✅ 선적완료
-              </div>
+            {/* 중국내 선적 → 입고완료 */}
+            {(selected.status === "shipping" || selected.status === "shipped") && (
+              <button
+                onClick={() => updateStatus(selected.id, "arrived")}
+                className="w-full bg-emerald-600 text-white rounded-2xl py-4 font-bold text-base flex items-center justify-center gap-2 active:opacity-80 shadow-sm"
+              >
+                ✅ 입고완료 처리
+              </button>
             )}
-            {/* 상태 되돌리기 (소형) */}
+            {/* 입고완료 - 재발주 가능 */}
+            {selected.status === "arrived" && (
+              <button
+                onClick={() => {
+                  setShowOrderModal(true);
+                  setOrderForm({
+                    unitPriceCny: String(selected.costCny || ""),
+                    quantity: selected.moq ? String(selected.moq) : "",
+                    orderedAt: new Date().toISOString().slice(0, 10),
+                    expectedArrival: "",
+                    memo: "",
+                    updateCostCny: false,
+                  });
+                }}
+                className="w-full bg-orange-500 text-white rounded-2xl py-4 font-bold text-base flex items-center justify-center gap-2 active:opacity-80 shadow-sm"
+              >
+                📦 재발주하기
+              </button>
+            )}
+            {/* 이전 단계 되돌리기 */}
             {selected.status !== "sourcing" && (
               <button
                 onClick={() => {
-                  const prev = selected.status === "shipped" ? "ordered"
-                    : selected.status === "ordered" ? "proposed"
-                    : "sourcing";
-                  updateStatus(selected.id, prev);
+                  const prev: Record<string, string> = {
+                    proposed: "sourcing", ordered: "sourcing",
+                    shipping: "ordered", shipped: "ordered", arrived: "shipping",
+                  };
+                  updateStatus(selected.id, prev[selected.status] || "sourcing");
                 }}
                 className="w-full text-xs text-gray-400 py-2 text-center"
               >
@@ -700,68 +808,200 @@ export default function SourcingPage() {
             )}
           </div>
 
-          {/* 발주 모달 */}
+          {/* ── 발주 이력 ── */}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+              <span className="font-bold text-sm text-gray-700">📋 발주 이력</span>
+              <span className="text-xs text-gray-400">{orderHistory.length}건</span>
+            </div>
+            {historyLoading ? (
+              <div className="px-4 py-6 text-center text-sm text-gray-400">불러오는 중...</div>
+            ) : orderHistory.length === 0 ? (
+              <div className="px-4 py-6 text-center text-sm text-gray-400">발주 이력이 없습니다</div>
+            ) : (
+              <div className="divide-y divide-gray-50">
+                {orderHistory.map((ord, idx) => {
+                  const sl = STATUS_LABELS[ord.status] || STATUS_LABELS.ordered;
+                  return (
+                    <div key={ord.id} className={`px-4 py-3 ${idx === 0 ? "bg-orange-50" : ""}`}>
+                      <div className="flex items-center justify-between mb-1">
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${sl.color}`}>{sl.emoji} {sl.label}</span>
+                        <span className="text-xs text-gray-400">{ord.orderedAt?.slice(0, 10)}</span>
+                      </div>
+                      <div className="flex items-baseline gap-3 mt-1">
+                        {ord.unitPriceCny && (
+                          <span className="text-sm font-bold text-gray-800">¥{ord.unitPriceCny} × {ord.quantity?.toLocaleString()}개</span>
+                        )}
+                        {ord.totalCny && (
+                          <span className="text-base font-extrabold text-orange-600">= ¥{ord.totalCny.toLocaleString()}</span>
+                        )}
+                      </div>
+                      {ord.totalKrw && (
+                        <div className="text-sm font-semibold text-blue-700 mt-0.5">{formatKrw(ord.totalKrw)}</div>
+                      )}
+                      <div className="flex gap-3 mt-1 text-xs text-gray-500">
+                        {ord.shippedAt && <span>🚢 선적 {ord.shippedAt.slice(0, 10)}</span>}
+                        {ord.expectedArrival && <span>📅 입고예정 {ord.expectedArrival.slice(0, 10)}</span>}
+                      </div>
+                      {ord.memo && <p className="text-xs text-gray-400 mt-1">{ord.memo}</p>}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* ── 발주하기 모달 ── */}
           {showOrderModal && (
             <div className="fixed inset-0 z-50 bg-black/60 flex items-end" onClick={() => setShowOrderModal(false)}>
-              <div className="bg-white w-full rounded-t-3xl px-5 pt-5 pb-8 space-y-4" onClick={e => e.stopPropagation()}>
+              <div className="bg-white w-full rounded-t-3xl px-5 pt-5 pb-10 space-y-4 max-h-[92vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                {/* 헤더 */}
                 <div className="flex items-center justify-between">
                   <h3 className="font-bold text-lg">📦 발주하기</h3>
                   <button onClick={() => setShowOrderModal(false)} className="text-gray-400 p-1"><X className="w-5 h-5" /></button>
                 </div>
-                {/* 상품 + 거래처 표시 */}
-                <div className="bg-gray-50 rounded-2xl p-3 space-y-1">
+                {/* 상품 정보 */}
+                <div className="bg-gray-50 rounded-2xl p-3">
                   <div className="font-semibold text-gray-800 text-sm">{selected.nameKr}</div>
-                  {selected.supplier && <div className="text-xs text-gray-500">🏪 {selected.supplier.name}</div>}
-                  <div className="text-xs text-orange-500 font-medium">¥{selected.costCny} / 매입단가 {formatKrw(calc.landedCost)}</div>
+                  {selected.supplier && <div className="text-xs text-gray-500 mt-0.5">🏪 {selected.supplier.name}</div>}
+                  <div className="text-xs text-gray-400 mt-0.5">소싱가 ¥{selected.costCny} · 매입단가 {formatKrw(calc.landedCost)}</div>
                 </div>
-                {/* 수량 */}
-                <div>
-                  <label className="text-xs text-gray-500 mb-1 block">수량 *</label>
-                  <input
-                    type="number" inputMode="numeric"
-                    value={orderForm.quantity}
-                    onChange={e => setOrderForm(p => ({ ...p, quantity: e.target.value }))}
-                    placeholder="예: 200"
-                    className="w-full border-2 border-emerald-200 rounded-xl px-3 py-3 text-lg font-bold focus:outline-none focus:border-emerald-400"
-                    autoFocus
-                  />
-                </div>
-                {/* 발주금액 */}
-                <div>
-                  <label className="text-xs text-gray-500 mb-1 block">발주금액 (위안, 선택)</label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text" inputMode="decimal"
-                      value={orderForm.totalCny}
-                      onChange={e => setOrderForm(p => ({ ...p, totalCny: e.target.value }))}
-                      placeholder="예: 1000"
-                      className="flex-1 border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-400"
-                    />
-                    <span className="text-sm text-gray-400">위안</span>
+
+                {/* ── 핵심: 단가 × 수량 = 합계 ── */}
+                <div className="bg-orange-50 rounded-2xl p-4 space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* 발주 단가 */}
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block font-medium">발주 단가 (¥) *</label>
+                      <input
+                        type="text" inputMode="decimal"
+                        value={orderForm.unitPriceCny}
+                        onChange={e => setOrderForm(p => ({ ...p, unitPriceCny: e.target.value }))}
+                        placeholder={String(selected.costCny)}
+                        className="w-full border-2 border-orange-200 rounded-xl px-3 py-3 text-lg font-bold focus:outline-none focus:border-orange-400 bg-white"
+                        autoFocus
+                      />
+                      {orderForm.unitPriceCny && parseFloat(orderForm.unitPriceCny) !== selected.costCny && (
+                        <p className="text-xs text-orange-500 mt-0.5">
+                          소싱가 ¥{selected.costCny}와 다릅니다
+                        </p>
+                      )}
+                    </div>
+                    {/* 수량 */}
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block font-medium">수량 *</label>
+                      <input
+                        type="number" inputMode="numeric"
+                        value={orderForm.quantity}
+                        onChange={e => setOrderForm(p => ({ ...p, quantity: e.target.value }))}
+                        placeholder="200"
+                        className="w-full border-2 border-orange-200 rounded-xl px-3 py-3 text-lg font-bold focus:outline-none focus:border-orange-400 bg-white"
+                      />
+                    </div>
                   </div>
-                  {orderForm.quantity && orderForm.totalCny && (
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      개당 ¥{(parseFloat(orderForm.totalCny) / parseFloat(orderForm.quantity)).toFixed(2)}
-                    </p>
+                  {/* 총합 자동계산 */}
+                  {orderForm.unitPriceCny && orderForm.quantity && (
+                    <div className="bg-white rounded-xl px-4 py-3 space-y-1">
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-500">총 발주금액</span>
+                        <span className="text-xl font-extrabold text-orange-600">
+                          ¥{(parseFloat(orderForm.unitPriceCny) * parseInt(orderForm.quantity)).toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-xs text-gray-500">원화 환산</span>
+                        <span className="text-base font-bold text-blue-700">
+                          {formatKrw(parseFloat(orderForm.unitPriceCny) * parseInt(orderForm.quantity) * (selected.exchangeRate || 193.5))}
+                        </span>
+                      </div>
+                    </div>
                   )}
                 </div>
+
+                {/* 원가계산서 업데이트 (단가 다를 때만) */}
+                {orderForm.unitPriceCny && parseFloat(orderForm.unitPriceCny) !== selected.costCny && (
+                  <label className="flex items-center gap-3 bg-amber-50 rounded-xl px-4 py-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={orderForm.updateCostCny}
+                      onChange={e => setOrderForm(p => ({ ...p, updateCostCny: e.target.checked }))}
+                      className="w-5 h-5 rounded accent-orange-500"
+                    />
+                    <div>
+                      <p className="text-sm font-medium text-gray-800">원가계산서도 업데이트</p>
+                      <p className="text-xs text-gray-500">¥{selected.costCny} → ¥{orderForm.unitPriceCny}</p>
+                    </div>
+                  </label>
+                )}
+
+                {/* 발주일 / 입고예정일 */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs text-gray-500 mb-1 block font-medium">발주일</label>
+                    <input
+                      type="date"
+                      value={orderForm.orderedAt}
+                      onChange={e => setOrderForm(p => ({ ...p, orderedAt: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-orange-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500 mb-1 block font-medium">입고예정일</label>
+                    <input
+                      type="date"
+                      value={orderForm.expectedArrival}
+                      onChange={e => setOrderForm(p => ({ ...p, expectedArrival: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-orange-400"
+                    />
+                  </div>
+                </div>
+
                 {/* 메모 */}
                 <div>
-                  <label className="text-xs text-gray-500 mb-1 block">메모 (선택)</label>
+                  <label className="text-xs text-gray-500 mb-1 block font-medium">메모 (선택)</label>
                   <input
                     type="text"
                     value={orderForm.memo}
                     onChange={e => setOrderForm(p => ({ ...p, memo: e.target.value }))}
                     placeholder="색상, 사이즈, 특이사항 등"
-                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-400"
+                    className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-orange-400"
+                  />
+                </div>
+
+                {/* 확정 버튼 */}
+                <button
+                  onClick={submitOrder}
+                  disabled={orderSaving || !orderForm.unitPriceCny || !orderForm.quantity}
+                  className="w-full bg-orange-500 text-white rounded-2xl py-4 font-bold text-base disabled:opacity-40 shadow-sm"
+                >
+                  {orderSaving ? "처리 중..." : "발주 확정하기 →"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ── 선적 처리 모달 ── */}
+          {showShipModal && (
+            <div className="fixed inset-0 z-50 bg-black/60 flex items-end" onClick={() => setShowShipModal(false)}>
+              <div className="bg-white w-full rounded-t-3xl px-5 pt-5 pb-10 space-y-4" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center justify-between">
+                  <h3 className="font-bold text-lg">🚢 중국내 선적 처리</h3>
+                  <button onClick={() => setShowShipModal(false)} className="text-gray-400 p-1"><X className="w-5 h-5" /></button>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-500 mb-1 block font-medium">선적일</label>
+                  <input
+                    type="date"
+                    value={shipDate}
+                    onChange={e => setShipDate(e.target.value)}
+                    className="w-full border-2 border-purple-200 rounded-xl px-3 py-3 text-lg font-bold focus:outline-none focus:border-purple-400"
                   />
                 </div>
                 <button
-                  onClick={submitOrder}
-                  disabled={orderSaving}
-                  className="w-full bg-emerald-500 text-white rounded-2xl py-4 font-bold text-base disabled:opacity-50"
+                  onClick={submitShipping}
+                  className="w-full bg-purple-600 text-white rounded-2xl py-4 font-bold text-base shadow-sm"
                 >
-                  {orderSaving ? "처리 중..." : "발주 확정"}
+                  🚢 선적 확인
                 </button>
               </div>
             </div>
@@ -1916,10 +2156,11 @@ export default function SourcingPage() {
         <div className="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none flex-1">
           {[
             { key: "all",      label: `전체 ${items.length}` },
-            { key: "sourcing", label: `시장조사 ${items.filter(i => i.status === "sourcing").length}` },
-            { key: "proposed", label: `제안 ${items.filter(i => i.status === "proposed").length}` },
-            { key: "ordered",  label: `발주 ${items.filter(i => i.status === "ordered").length}` },
-            { key: "shipped",  label: `선적 ${items.filter(i => i.status === "shipped").length}` },
+            { key: "sourcing", label: `🔍 시장조사 ${items.filter(i => i.status === "sourcing").length}` },
+            { key: "proposed", label: `📋 제안 ${items.filter(i => i.status === "proposed").length}` },
+            { key: "ordered",  label: `📦 발주 ${items.filter(i => i.status === "ordered").length}` },
+            { key: "shipping", label: `🚢 선적 ${items.filter(i => i.status === "shipping" || i.status === "shipped").length}` },
+            { key: "arrived",  label: `✅ 입고 ${items.filter(i => i.status === "arrived").length}` },
           ].map((f) => (
             <button
               key={f.key}
@@ -1965,7 +2206,7 @@ export default function SourcingPage() {
               return (
                 <button
                   key={item.id}
-                  onClick={() => setSelected(item)}
+                  onClick={() => { setSelected(item); loadOrderHistory(item.id); }}
                   className="w-full bg-white rounded-2xl p-4 shadow-sm border border-gray-100 text-left active:scale-95 transition-transform"
                 >
                   <div className="flex items-start gap-3">
@@ -1976,9 +2217,8 @@ export default function SourcingPage() {
                       <div className="flex items-start justify-between gap-2">
                         <div className="font-semibold text-gray-900 truncate text-sm leading-snug">{item.nameKr}</div>
                         <div className="flex items-center gap-1 shrink-0">
-                          <span className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_LABELS[item.status]?.color}`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${STATUS_LABELS[item.status]?.dot}`} />
-                            {STATUS_LABELS[item.status]?.label}
+                          <span className={`flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_LABELS[item.status]?.color || "bg-gray-100 text-gray-500"}`}>
+                            {STATUS_LABELS[item.status]?.emoji} {STATUS_LABELS[item.status]?.label}
                           </span>
                         </div>
                       </div>
