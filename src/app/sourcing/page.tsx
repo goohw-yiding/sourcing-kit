@@ -213,7 +213,7 @@ export default function SourcingPage() {
       setF("inlandShipping", Math.round(((form.cbm as number) / 4) * inlandRate / Math.max(boxQty, 1)));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.cbm, inlandRate, inlandManual]);
+  }, [form.cbm, inlandRate, inlandManual, boxQty]);
 
   const filtered = items
     .filter((i) => {
@@ -544,7 +544,7 @@ export default function SourcingPage() {
             <div className="text-3xl font-bold">{formatKrw(calc.landedCost)}</div>
             <div className="mt-3 pt-3 border-t border-orange-400/50 space-y-1 text-sm text-orange-100">
               <div className="flex justify-between"><span>원화원가</span><span>{calc.costKrw.toLocaleString()}원</span></div>
-              <div className="flex justify-between"><span>에이전트수수료({(selected.agentFeeRate * 100).toFixed(0)}%)</span><span>{calc.agentFee.toLocaleString()}원</span></div>
+              <div className="flex justify-between"><span>에이전트수수료({selected.agentFeeRate >= 1 ? `${selected.agentFeeRate.toLocaleString()}원 고정` : `${(selected.agentFeeRate * 100).toFixed(1)}%`})</span><span>{calc.agentFee.toLocaleString()}원</span></div>
               {calc.cbmShipping > 0 && <div className="flex justify-between"><span>CBM운송비</span><span>{calc.cbmShipping.toLocaleString()}원</span></div>}
               <div className="flex justify-between"><span>관세({(selected.customsRate * 100).toFixed(0)}%)</span><span>{calc.customsDuty.toLocaleString()}원</span></div>
               <div className="flex justify-between"><span>부가세(10%)</span><span>{calc.vat.toLocaleString()}원</span></div>
@@ -688,7 +688,7 @@ export default function SourcingPage() {
                   </div>
                   {orderForm.quantity && orderForm.totalCny && (
                     <p className="text-xs text-gray-400 mt-0.5">
-                      개당 ¥{(parseFloat(orderForm.totalCny) / parseInt(orderForm.quantity)).toFixed(2)}
+                      개당 ¥{(parseFloat(orderForm.totalCny) / parseFloat(orderForm.quantity)).toFixed(2)}
                     </p>
                   )}
                 </div>
@@ -1344,9 +1344,9 @@ export default function SourcingPage() {
                               const w = label === "세로" ? (parseFloat(e.target.value) || 0) : boxW;
                               const h = label === "높이" ? (parseFloat(e.target.value) || 0) : boxH;
                               if (l > 0 && w > 0 && h > 0) {
-                                const computed = Math.round((l * w * h / 1_000_000) * 1_000_000) / 1_000_000;
-                                setF("cbm", computed);
-                                setCbmStr(String(computed));
+                                const perUnit = Math.round((l * w * h / 1_000_000 / Math.max(boxQty, 1)) * 1_000_000) / 1_000_000;
+                                setF("cbm", perUnit);
+                                setCbmStr(String(perUnit));
                               }
                             }}
                             placeholder="0"
