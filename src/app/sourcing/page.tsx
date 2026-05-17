@@ -602,18 +602,28 @@ export default function SourcingPage() {
     setAgentFeeMode(mode);
   };
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     imageFileRef.current = file;
+    // 미리보기 즉시 표시
     setImagePreview(URL.createObjectURL(file));
     setMarketResult(null);
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const base64 = ev.target?.result as string;
-      setF("imageUrl", base64);
-    };
-    reader.readAsDataURL(file);
+
+    // Cloudinary 업로드
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/upload", { method: "POST", body: fd });
+      if (!res.ok) throw new Error("upload failed");
+      const { url } = await res.json();
+      setF("imageUrl", url); // Cloudinary URL 저장
+    } catch {
+      // 업로드 실패 시 base64 폴백
+      const reader = new FileReader();
+      reader.onload = (ev) => setF("imageUrl", ev.target?.result as string);
+      reader.readAsDataURL(file);
+    }
   };
 
   const runMarketAnalysis = async () => {
