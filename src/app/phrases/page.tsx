@@ -85,183 +85,6 @@ function ShowModal({ phrase, onClose }: { phrase: Phrase; onClose: () => void })
   );
 }
 
-/* ── 이우 시장 구역 데이터 ───────────────────────────────── */
-const YIWU_DISTRICTS = [
-  { label: "1구", name: "义乌国际商贸城一区", lon: 120.0715, lat: 29.3263 },
-  { label: "2구", name: "义乌国际商贸城二区", lon: 120.0768, lat: 29.3296 },
-  { label: "3구", name: "义乌国际商贸城三区", lon: 120.0845, lat: 29.3182 },
-  { label: "4구", name: "义乌国际商贸城四区", lon: 120.0890, lat: 29.3143 },
-  { label: "5구", name: "义乌国际商贸城五区", lon: 120.0951, lat: 29.3085 },
-];
-
-// 구역 간 이동 팁 [from][to]
-const ROUTE_TIPS: Record<string, string> = {
-  "0-1": "1구 정문 나와 빈왕로(宾王路) 따라 북쪽으로 약 12분 도보",
-  "0-2": "1구 정문 → 빈왕로 남쪽 방향 → 3구 북문, 약 20분",
-  "0-3": "1구 → 빈왕로 → 청소년광장 경유 → 4구, 약 28분. 거리 멀면 택시 추천",
-  "0-4": "1구에서 5구까지 직접 걷기는 40분+. 전기차 셔틀 또는 택시 이용 강력 추천",
-  "1-0": "2구 남문 나와 빈왕로 따라 남쪽으로 약 12분 도보",
-  "1-2": "2구 남문 → 빈왕로 → 3구 북문, 약 18분 도보",
-  "1-3": "2구 → 빈왕로 → 청소년광장 경유 → 4구, 약 25분",
-  "1-4": "2구에서 5구는 약 35분+. 전기차 셔틀 또는 택시 이용 추천",
-  "2-0": "3구 북문 나와 빈왕로 따라 북쪽으로 약 20분 도보",
-  "2-1": "3구 북문 → 빈왕로 북쪽 → 2구 남문, 약 18분 도보",
-  "2-3": "3구 동문 → 동방로(东方路) 따라 동쪽 → 4구, 약 10분 도보",
-  "2-4": "3구 → 동방로 → 4구 → 5구 방향, 약 20분",
-  "3-0": "4구 → 청소년광장 → 빈왕로 → 1구, 약 28분. 택시 추천",
-  "3-1": "4구 → 청소년광장 → 빈왕로 → 2구, 약 25분",
-  "3-2": "4구 서문 → 동방로 → 3구 동문, 약 10분 도보",
-  "3-4": "4구 동문 나와 동방로 따라 동쪽으로 약 12분 도보 → 5구",
-  "4-0": "5구에서 1구는 약 40분+. 전기차 셔틀 또는 택시 강력 추천",
-  "4-1": "5구 → 동방로 → 4구 → 2구 방향, 약 35분. 택시 추천",
-  "4-2": "5구 → 동방로 → 3구, 약 20분 도보",
-  "4-3": "5구 서문 → 동방로 따라 서쪽으로 약 12분 도보 → 4구",
-};
-
-const WALK_MINUTES: number[][] = [
-  [0, 12, 20, 28, 40],
-  [12, 0, 18, 25, 35],
-  [20, 18, 0, 10, 20],
-  [28, 25, 10, 0, 12],
-  [40, 35, 20, 12, 0],
-];
-
-/* ── 시장 이동 길찾기 컴포넌트 ───────────────────────────── */
-function MarketNav() {
-  const [from, setFrom] = useState<number | null>(null);
-  const [to, setTo]     = useState<number | null>(null);
-  const [fromFloor, setFromFloor] = useState("");
-  const [toFloor, setToFloor]     = useState("");
-  const [fromArea, setFromArea]   = useState("");
-  const [toArea, setToArea]       = useState("");
-
-  const canNav = from !== null && to !== null && from !== to;
-  const minutes = canNav ? WALK_MINUTES[from][to] : null;
-  const tip = canNav ? ROUTE_TIPS[`${from}-${to}`] : null;
-
-  const openAmap = () => {
-    if (!canNav) return;
-    const f = YIWU_DISTRICTS[from];
-    const t = YIWU_DISTRICTS[to];
-    const fromName = encodeURIComponent(`${f.name}${fromFloor ? ` ${fromFloor}층` : ""}`);
-    const toName   = encodeURIComponent(`${t.name}${toFloor ? ` ${toFloor}층` : ""}`);
-    const url = `https://www.amap.com/dir?from[lnglat]=${f.lon},${f.lat}&from[name]=${fromName}&to[lnglat]=${t.lon},${t.lat}&to[name]=${toName}&type=walk`;
-    window.open(url, "_blank");
-  };
-
-  return (
-    <div className="bg-white rounded-2xl border border-blue-100 shadow-sm overflow-hidden">
-      <div className="bg-gradient-to-r from-blue-600 to-blue-500 px-4 py-3">
-        <p className="font-bold text-white text-sm">🏙️ 이우 시장 내 이동 길찾기</p>
-        <p className="text-blue-100 text-xs mt-0.5">구역·층 선택 → 고덕지도 도보 경로</p>
-      </div>
-
-      <div className="p-4 space-y-4">
-        {/* FROM / TO */}
-        {[
-          { label: "출발", val: from, setVal: setFrom, floor: fromFloor, setFloor: setFromFloor, area: fromArea, setArea: setFromArea, color: "border-blue-400 bg-blue-50" },
-          { label: "도착", val: to,   setVal: setTo,   floor: toFloor,   setFloor: setToFloor,   area: toArea,   setArea: setToArea,   color: "border-orange-400 bg-orange-50" },
-        ].map(({ label, val, setVal, floor, setFloor, area, setArea, color }) => (
-          <div key={label} className={`rounded-xl border-2 p-3 space-y-2 ${color}`}>
-            <p className="text-xs font-bold text-gray-600">{label} 위치</p>
-            {/* 구역 선택 */}
-            <div className="grid grid-cols-5 gap-1.5">
-              {YIWU_DISTRICTS.map((d, i) => (
-                <button
-                  key={i}
-                  onClick={() => setVal(i)}
-                  className={`py-2 rounded-xl text-xs font-bold border-2 transition-all ${
-                    val === i
-                      ? "bg-[var(--primary)] text-white border-[var(--primary)]"
-                      : "bg-white text-gray-600 border-gray-200"
-                  }`}
-                >
-                  {d.label}
-                </button>
-              ))}
-            </div>
-            {/* 층 + 구역 */}
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="text-xs text-gray-400 mb-1 block">층 (선택)</label>
-                <input
-                  type="text"
-                  value={floor}
-                  onChange={(e) => setFloor(e.target.value)}
-                  placeholder="예: 2층"
-                  className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-blue-400 bg-white"
-                />
-              </div>
-              <div>
-                <label className="text-xs text-gray-400 mb-1 block">구역·상품 (선택)</label>
-                <input
-                  type="text"
-                  value={area}
-                  onChange={(e) => setArea(e.target.value)}
-                  placeholder="예: 주방용품 C区"
-                  className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:border-blue-400 bg-white"
-                />
-              </div>
-            </div>
-          </div>
-        ))}
-
-        {/* 경로 미리보기 */}
-        {canNav && (
-          <div className="bg-gray-50 rounded-xl px-4 py-3 space-y-1.5">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-bold text-gray-700">
-                {YIWU_DISTRICTS[from!].label} → {YIWU_DISTRICTS[to!].label}
-              </span>
-              <span className={`text-sm font-bold px-2 py-0.5 rounded-full ${
-                minutes! <= 15 ? "bg-green-100 text-green-700" :
-                minutes! <= 25 ? "bg-amber-100 text-amber-700" :
-                "bg-red-100 text-red-700"
-              }`}>
-                도보 약 {minutes}분
-              </span>
-            </div>
-            {minutes! >= 30 && (
-              <p className="text-xs text-red-500 font-medium">⚠️ 거리가 멀어요. 전기차 셔틀 또는 택시 이용을 추천해요.</p>
-            )}
-            {tip && <p className="text-xs text-gray-500 leading-relaxed">{tip}</p>}
-          </div>
-        )}
-
-        {from === to && from !== null && (
-          <p className="text-xs text-center text-gray-400">출발과 도착이 같은 구역이에요</p>
-        )}
-
-        {/* 길찾기 버튼 */}
-        <button
-          onClick={openAmap}
-          disabled={!canNav}
-          className="w-full bg-blue-600 text-white rounded-2xl py-3.5 font-bold text-sm disabled:opacity-40 flex items-center justify-center gap-2"
-        >
-          <span className="text-lg">🗺️</span>
-          고덕지도에서 도보 경로 열기
-        </button>
-        <p className="text-center text-xs text-gray-400">
-          앱 없이 브라우저에서 바로 확인 · 로그인 불필요
-        </p>
-
-        {/* 실내지도 바로가기 */}
-        <Link href="/indoor">
-          <div className="w-full bg-emerald-50 border border-emerald-200 rounded-2xl py-3 px-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="text-lg">🗂️</span>
-              <div>
-                <p className="text-sm font-bold text-emerald-700">이우 시장 상품지도</p>
-                <p className="text-xs text-emerald-500">구별 상품 위치 검색 (예: 주방용품 → 3구)</p>
-              </div>
-            </div>
-            <ChevronRight className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-          </div>
-        </Link>
-      </div>
-    </div>
-  );
-}
 
 /* ── 시장 위치 프리셋 ─────────────────────────────────────── */
 const MARKET_PRESETS = [
@@ -387,8 +210,19 @@ function NearbyTab({ onShowPhrases }: { onShowPhrases: (catId: string) => void }
   return (
     <div className="px-4 pb-6 space-y-4">
 
-      {/* 이우 시장 이동 길찾기 */}
-      <MarketNav />
+      {/* 이우 시장 상품지도 */}
+      <Link href="/indoor">
+        <div className="bg-white rounded-2xl border border-emerald-100 shadow-sm px-4 py-3.5 flex items-center justify-between active:bg-gray-50">
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">🗂️</span>
+            <div>
+              <p className="text-sm font-bold text-gray-800">이우 시장 상품지도</p>
+              <p className="text-xs text-gray-400 mt-0.5">구역·층별 취급 품목 검색</p>
+            </div>
+          </div>
+          <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" />
+        </div>
+      </Link>
 
       {/* 현재 위치 표시 + 변경 */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
