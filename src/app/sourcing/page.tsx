@@ -148,6 +148,9 @@ export default function SourcingPage() {
   const [agentFeeResultMode, setAgentFeeResultMode] = useState<"cny" | "usd" | "krw">("krw");
   // USD 환율 선택 모드
   const [usdRateMode, setUsdRateMode] = useState<"base" | "sell" | "buy">("base");
+  // 1688 중국어 검색어 (번역 결과 캐시)
+  const [cn1688Kw, setCn1688Kw] = useState<string>("");
+  const [cn1688Loading, setCn1688Loading] = useState(false);
   // 발주 모달
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [orderForm, setOrderForm] = useState({ quantity: "", totalCny: "", memo: "" });
@@ -439,6 +442,36 @@ export default function SourcingPage() {
 
   const applyChinaShipTotal = (totalKrw: number) => {
     setF("chinaShipping", Math.round(totalKrw / Math.max(boxQty, 1)));
+  };
+
+  // 1688 검색 — 중국어 감지 후 필요 시 자동 번역
+  const isChinese = (s: string) => /[一-鿿]/.test(s);
+  const open1688 = async (productNameCn: string, fallbackKr: string) => {
+    // 1) 이미 중국어가 있으면 바로 검색
+    if (isChinese(productNameCn)) {
+      openNewTab(`https://s.1688.com/selloffer/offerlist.htm?keywords=${encodeURIComponent(productNameCn)}`);
+      return;
+    }
+    // 2) 캐시된 번역어가 있으면 사용
+    if (cn1688Kw) {
+      openNewTab(`https://s.1688.com/selloffer/offerlist.htm?keywords=${encodeURIComponent(cn1688Kw)}`);
+      return;
+    }
+    // 3) Claude로 번역
+    setCn1688Loading(true);
+    try {
+      const res = await fetch("/api/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: fallbackKr }),
+      });
+      const data = await res.json();
+      const cn = data.cn || fallbackKr;
+      setCn1688Kw(cn);
+      openNewTab(`https://s.1688.com/selloffer/offerlist.htm?keywords=${encodeURIComponent(cn)}`);
+    } finally {
+      setCn1688Loading(false);
+    }
   };
 
   // 에이전트 수수료 모드 전환
@@ -1782,14 +1815,16 @@ export default function SourcingPage() {
                   {/* 검색 키워드 표시 */}
                   {(() => {
                     const krKw = marketResult.productNameKr || (marketResult.recommendKeywords[0] ?? "");
-                    const cnKw = marketResult.productNameCn || krKw;
+                    const cnRaw = marketResult.productNameCn;
+                    const cnDisplay = isChinese(cnRaw) ? cnRaw : cn1688Kw;
+                    const fallbackKr = marketResult.recommendKeywords[0] || krKw;
                     return (
                       <>
                         <div className="bg-gray-50 rounded-xl px-3 py-2 text-xs text-gray-500">
                           <span className="font-medium text-gray-700">검색어:</span>{" "}
                           🇰🇷 <span className="text-green-700 font-semibold">{krKw}</span>
-                          {marketResult.productNameCn && (
-                            <> &nbsp;·&nbsp; 🇨🇳 <span className="text-orange-600 font-semibold">{cnKw}</span></>
+                          {cnDisplay && (
+                            <> &nbsp;·&nbsp; 🇨🇳 <span className="text-orange-600 font-semibold">{cnDisplay}</span></>
                           )}
                         </div>
                         <div className="grid grid-cols-3 gap-2">
@@ -1804,9 +1839,10 @@ export default function SourcingPage() {
                             쿠팡
                           </button>
                           <button
-                            onClick={() => openNewTab(`https://s.1688.com/selloffer/offerlist.htm?keywords=${encodeURIComponent(cnKw)}`)}
-                            className="bg-orange-500 text-white text-xs font-bold py-3 rounded-xl text-center w-full active:opacity-80">
-                            1688
+                            onClick={() => open1688(cnRaw, fallbackKr)}
+                            disabled={cn1688Loading}
+                            className="bg-orange-500 text-white text-xs font-bold py-3 rounded-xl text-center w-full active:opacity-80 disabled:opacity-60">
+                            {cn1688Loading ? "번역중…" : "1688"}
                           </button>
                         </div>
                         <p className="text-[10px] text-gray-400 text-center pb-2">
@@ -2158,14 +2194,16 @@ export default function SourcingPage() {
                   {/* 검색 키워드 표시 */}
                   {(() => {
                     const krKw = marketResult.productNameKr || (marketResult.recommendKeywords[0] ?? "");
-                    const cnKw = marketResult.productNameCn || krKw;
+                    const cnRaw = marketResult.productNameCn;
+                    const cnDisplay = isChinese(cnRaw) ? cnRaw : cn1688Kw;
+                    const fallbackKr = marketResult.recommendKeywords[0] || krKw;
                     return (
                       <>
                         <div className="bg-gray-50 rounded-xl px-3 py-2 text-xs text-gray-500">
                           <span className="font-medium text-gray-700">검색어:</span>{" "}
                           🇰🇷 <span className="text-green-700 font-semibold">{krKw}</span>
-                          {marketResult.productNameCn && (
-                            <> &nbsp;·&nbsp; 🇨🇳 <span className="text-orange-600 font-semibold">{cnKw}</span></>
+                          {cnDisplay && (
+                            <> &nbsp;·&nbsp; 🇨🇳 <span className="text-orange-600 font-semibold">{cnDisplay}</span></>
                           )}
                         </div>
                         <div className="grid grid-cols-3 gap-2">
@@ -2180,9 +2218,10 @@ export default function SourcingPage() {
                             쿠팡
                           </button>
                           <button
-                            onClick={() => openNewTab(`https://s.1688.com/selloffer/offerlist.htm?keywords=${encodeURIComponent(cnKw)}`)}
-                            className="bg-orange-500 text-white text-xs font-bold py-3 rounded-xl text-center w-full active:opacity-80">
-                            1688
+                            onClick={() => open1688(cnRaw, fallbackKr)}
+                            disabled={cn1688Loading}
+                            className="bg-orange-500 text-white text-xs font-bold py-3 rounded-xl text-center w-full active:opacity-80 disabled:opacity-60">
+                            {cn1688Loading ? "번역중…" : "1688"}
                           </button>
                         </div>
                         <p className="text-[10px] text-gray-400 text-center pb-2">
