@@ -1492,7 +1492,7 @@ export default function SourcingPage() {
                   </div>
                   {!inlandManual && (form.cbm as number ?? 0) > 0 && (
                     <p className="text-xs text-green-700 bg-green-50 rounded-lg px-2 py-1.5">
-                      {(form.cbm as number).toFixed(4)}m³ ÷ 4 × {inlandRate.toLocaleString()}원 = <strong>{Math.round(((form.cbm as number) / 4) * inlandRate).toLocaleString()}원</strong>
+                      {((form.cbm as number) * Math.max(boxQty, 1)).toFixed(3)}m³ ÷ 4 × {inlandRate.toLocaleString()}원 ÷ {Math.max(boxQty, 1)}개 = <strong>{Math.round(((form.cbm as number) / 4) * inlandRate).toLocaleString()}원</strong>
                     </p>
                   )}
                   {inlandManual && (
