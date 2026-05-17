@@ -627,7 +627,7 @@ export default function SourcingPage() {
       ? calcLandedCost({ ...selected, exchangeRate: currentRate })
       : null;
     return (
-      <div className="min-h-screen pb-28 bg-[#F4F6FA]">
+      <div className="min-h-screen pb-40 bg-[#F4F6FA]">
         <header className="text-white px-5 pt-14 pb-5 flex items-center gap-3 bg-[var(--primary)]">
           <button onClick={() => setSelected(null)} className="p-1"><ArrowLeft className="w-5 h-5" /></button>
           <h1 className="text-lg font-bold flex-1">{selected.nameKr}</h1>
@@ -1029,7 +1029,7 @@ export default function SourcingPage() {
 
     return (
       <>
-      <div className="min-h-screen pb-28 bg-[#F4F6FA]">
+      <div className="min-h-screen pb-40 bg-[#F4F6FA]">
         <header className="text-white px-5 pt-14 pb-5 flex items-center gap-3 bg-[var(--primary)]">
           <button onClick={() => { setShowForm(false); setImagePreview(null); }} className="p-1"><ArrowLeft className="w-5 h-5" /></button>
           <h1 className="text-lg font-bold">상품 추가</h1>
