@@ -147,6 +147,7 @@ export default function SourcingPage() {
   const [boxW, setBoxW] = useState(0);
   const [boxH, setBoxH] = useState(0);
   const [boxQty, setBoxQty] = useState(0);
+  const [coOriginQty, setCoOriginQty] = useState(0); // CO 총비용을 나눌 총 주문수량
   const [shippingTotal, setShippingTotal] = useState(0);
   const [inlandRate, setInlandRate] = useState(100000);
   const [inlandManual, setInlandManual] = useState(false);
@@ -295,7 +296,7 @@ export default function SourcingPage() {
       // 상태 초기화
       setPriceMode("cny"); setKrwInput(0); setUsdInput(0);
       setPackMode("cny"); setPackCnyStr(""); setPackUsdStr("");
-      setCbmStr(""); setBoxL(0); setBoxW(0); setBoxH(0); setBoxQty(0);
+      setCbmStr(""); setBoxL(0); setBoxW(0); setBoxH(0); setBoxQty(0); setCoOriginQty(0);
       setAgentFeeMode("cny"); setAgentFeeCnyStr(""); setAgentFeeUsdStr("");
       setChinaShipMode("cny"); setChinaShipCny(0); setChinaShipUsd(0);
     } finally {
@@ -1021,7 +1022,7 @@ export default function SourcingPage() {
       cbm: form.cbm ?? 0,
       cbmRate: form.cbmRate ?? 90000,
       hasCoOrigin: form.hasCoOrigin ?? false,
-      coOriginCost: ((form.coOriginCost as number) || 0) / Math.max(boxQty, 1),
+      coOriginCost: ((form.coOriginCost as number) || 0) / Math.max(coOriginQty, 1),
       customsRate: form.customsRate ?? 0.08,
       inlandShipping: form.inlandShipping ?? 0,
     });
@@ -1416,23 +1417,72 @@ export default function SourcingPage() {
                   })()}
                 </div>
 
-                {/* 원산지 증명 */}
-                <div className="flex items-center justify-between py-2 border-t border-gray-100">
-                  <label className="text-sm text-gray-600">원산지 증명 (C/O) (선택)</label>
-                  <button onClick={() => setF("hasCoOrigin", !form.hasCoOrigin)}
-                    className={`w-12 h-6 rounded-full transition-colors ${form.hasCoOrigin ? "bg-blue-500" : "bg-gray-200"}`}>
-                    <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform mx-0.5 ${form.hasCoOrigin ? "translate-x-6" : "translate-x-0"}`} />
-                  </button>
-                </div>
-                {form.hasCoOrigin && (
-                  <div className="flex items-center gap-2 pl-2">
-                    <label className="text-xs text-gray-500 whitespace-nowrap">C/O 비용</label>
-                    <input type="number" inputMode="decimal" value={form.coOriginCost || ""}
-                      onChange={(e) => setF("coOriginCost", parseFloat(e.target.value) || 0)}
-                      placeholder="0" className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none" />
-                    <span className="text-xs text-gray-400">원</span>
+                {/* 원산지 증명 C/O */}
+                <div className="border-t border-gray-100 pt-2">
+                  {/* 헤더 + 포함/미포함 토글 */}
+                  <div className="flex items-center justify-between py-1">
+                    <label className="text-sm text-gray-600 font-medium">원산지 증명 (C/O)</label>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-xs font-semibold ${form.hasCoOrigin ? "text-blue-600" : "text-gray-400"}`}>
+                        {form.hasCoOrigin ? "원가포함" : "포함하지않음"}
+                      </span>
+                      <button onClick={() => setF("hasCoOrigin", !form.hasCoOrigin)}
+                        className={`w-12 h-6 rounded-full transition-colors ${form.hasCoOrigin ? "bg-blue-500" : "bg-gray-200"}`}>
+                        <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform mx-0.5 ${form.hasCoOrigin ? "translate-x-6" : "translate-x-0"}`} />
+                      </button>
+                    </div>
                   </div>
-                )}
+
+                  {/* 세부 입력 — 포함일 때만 표시 */}
+                  {form.hasCoOrigin && (
+                    <div className="mt-2 bg-blue-50 rounded-xl p-3 space-y-3">
+                      {/* C/O 총 비용 */}
+                      <div className="flex items-center gap-2">
+                        <label className="text-xs text-gray-500 whitespace-nowrap w-20">C/O 총 비용</label>
+                        <input type="number" inputMode="decimal"
+                          value={form.coOriginCost || ""}
+                          onChange={(e) => setF("coOriginCost", parseFloat(e.target.value) || 0)}
+                          placeholder="예: 50000"
+                          className="flex-1 border border-blue-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-400 bg-white" />
+                        <span className="text-xs text-gray-400">원</span>
+                      </div>
+
+                      {/* 총 주문수량 */}
+                      <div className="flex items-center gap-2">
+                        <label className="text-xs text-gray-500 whitespace-nowrap w-20">총 주문수량</label>
+                        <input type="number" inputMode="numeric"
+                          value={coOriginQty || ""}
+                          onChange={(e) => setCoOriginQty(parseInt(e.target.value) || 0)}
+                          placeholder="예: 500"
+                          className="flex-1 border border-blue-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-blue-400 bg-white" />
+                        <span className="text-xs text-gray-400">개</span>
+                      </div>
+
+                      {/* 안내 문구 */}
+                      <p className="text-[10px] text-blue-500 leading-relaxed">
+                        여러 상품과 함께 발주할 경우 전체 주문수량 입력<br/>
+                        이 상품만 단독 발주 시 이 상품 수량만 입력
+                      </p>
+
+                      {/* 계산 결과 */}
+                      {(form.coOriginCost as number) > 0 && coOriginQty > 0 && (
+                        <div className="bg-white rounded-lg px-3 py-2 text-xs space-y-1 border border-blue-100">
+                          <div className="flex justify-between text-gray-500">
+                            <span>C/O 총액 ÷ 총 주문수량</span>
+                            <span>{(form.coOriginCost as number).toLocaleString()}원 ÷ {coOriginQty.toLocaleString()}개</span>
+                          </div>
+                          <div className="flex justify-between text-blue-700 font-semibold">
+                            <span>개당 C/O 비용</span>
+                            <span>{Math.round((form.coOriginCost as number) / coOriginQty).toLocaleString()}원</span>
+                          </div>
+                        </div>
+                      )}
+                      {(form.coOriginCost as number) > 0 && coOriginQty === 0 && (
+                        <p className="text-[11px] text-orange-500">총 주문수량을 입력하면 개당 C/O 비용이 계산됩니다</p>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
