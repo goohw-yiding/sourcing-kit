@@ -544,7 +544,7 @@ export default function SourcingPage() {
             <div className="text-3xl font-bold">{formatKrw(calc.landedCost)}</div>
             <div className="mt-3 pt-3 border-t border-orange-400/50 space-y-1 text-sm text-orange-100">
               <div className="flex justify-between"><span>원화원가</span><span>{calc.costKrw.toLocaleString()}원</span></div>
-              <div className="flex justify-between"><span>에이전트수수료({selected.agentFeeRate >= 1 ? `${selected.agentFeeRate.toLocaleString()}원 고정` : `${(selected.agentFeeRate * 100).toFixed(1)}%`})</span><span>{calc.agentFee.toLocaleString()}원</span></div>
+              {calc.agentFee > 0 && <div className="flex justify-between"><span>에이전트수수료({(selected.agentFeeRate * 100).toFixed(1)}%)</span><span>{calc.agentFee.toLocaleString()}원</span></div>}
               {calc.cbmShipping > 0 && <div className="flex justify-between"><span>CBM운송비</span><span>{calc.cbmShipping.toLocaleString()}원</span></div>}
               <div className="flex justify-between"><span>관세({(selected.customsRate * 100).toFixed(0)}%)</span><span>{calc.customsDuty.toLocaleString()}원</span></div>
               <div className="flex justify-between"><span>부가세(10%)</span><span>{calc.vat.toLocaleString()}원</span></div>
@@ -1169,56 +1169,27 @@ export default function SourcingPage() {
                       placeholder="0" className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-purple-400" />
                   )}
                 </div>
-                {/* 에이전트 수수료 */}
+                {/* 에이전트 수수료 — % 입력 */}
                 <div>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <label className="text-xs text-gray-500">에이전트 수수료 (개당)</label>
-                    <div className="flex bg-gray-100 rounded-xl overflow-hidden text-xs font-semibold">
-                      <button onClick={() => handleAgentFeeModeChange("cny")} className={`px-2.5 py-1 transition-colors ${agentFeeMode === "cny" ? "bg-orange-500 text-white" : "text-gray-500"}`}>¥ 위안</button>
-                      <button onClick={() => handleAgentFeeModeChange("usd")} className={`px-2.5 py-1 transition-colors ${agentFeeMode === "usd" ? "bg-green-600 text-white" : "text-gray-500"}`}>$ 달러</button>
-                      <button onClick={() => handleAgentFeeModeChange("krw")} className={`px-2.5 py-1 transition-colors ${agentFeeMode === "krw" ? "bg-orange-500 text-white" : "text-gray-500"}`}>₩ 원</button>
-                    </div>
+                  <label className="text-xs text-gray-500 mb-1.5 block">에이전트 수수료 (%)</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number" inputMode="decimal"
+                      value={(form.agentFeeRate as number) > 0 ? +((form.agentFeeRate as number) * 100).toFixed(2) : ""}
+                      onChange={(e) => {
+                        const pct = parseFloat(e.target.value) || 0;
+                        setF("agentFeeRate", pct / 100);
+                      }}
+                      placeholder="예: 5"
+                      min="0" max="100" step="0.5"
+                      className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-purple-400"
+                    />
+                    <span className="text-sm text-gray-400 font-semibold">%</span>
                   </div>
-                  {agentFeeMode === "cny" && (
-                    <>
-                      <input type="text" inputMode="decimal"
-                        value={agentFeeCnyStr}
-                        onChange={(e) => {
-                          const raw = e.target.value;
-                          setAgentFeeCnyStr(raw);
-                          const v = parseFloat(raw) || 0;
-                          setF("agentFeeRate", Math.round(v * ((form.exchangeRate as number) || 193.5)));
-                        }}
-                        placeholder="예: 2.5"
-                        className="w-full border border-orange-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange-400" />
-                      {agentFeeCnyStr && parseFloat(agentFeeCnyStr) > 0 && (
-                        <p className="text-xs text-gray-400 mt-0.5">≈ {((form.agentFeeRate as number) || 0).toLocaleString()}원</p>
-                      )}
-                    </>
-                  )}
-                  {agentFeeMode === "usd" && (
-                    <>
-                      <input type="text" inputMode="decimal"
-                        value={agentFeeUsdStr}
-                        onChange={(e) => {
-                          const raw = e.target.value;
-                          setAgentFeeUsdStr(raw);
-                          const v = parseFloat(raw) || 0;
-                          setF("agentFeeRate", Math.round(v * usdKrwRate));
-                        }}
-                        placeholder="예: 0.5"
-                        className="w-full border border-green-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-green-400" />
-                      {agentFeeUsdStr && parseFloat(agentFeeUsdStr) > 0 && (
-                        <p className="text-xs text-gray-400 mt-0.5">≈ {((form.agentFeeRate as number) || 0).toLocaleString()}원</p>
-                      )}
-                    </>
-                  )}
-                  {agentFeeMode === "krw" && (
-                    <input type="number" inputMode="decimal"
-                      value={(form.agentFeeRate as number) >= 1 ? form.agentFeeRate : ""}
-                      onChange={(e) => setF("agentFeeRate", parseFloat(e.target.value) || 0)}
-                      placeholder="0"
-                      className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-purple-400" />
+                  {(form.agentFeeRate as number) > 0 && (form.costCny as number) > 0 && (
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      ≈ {Math.round((form.costCny as number) * ((form.exchangeRate as number) || 193.5) * (form.agentFeeRate as number)).toLocaleString()}원
+                    </p>
                   )}
                 </div>
               </div>
@@ -1378,7 +1349,11 @@ export default function SourcingPage() {
                         <span>박스 CBM × CBM단가</span>
                         <span>{(form.cbm as number).toFixed(4)} m³ × {((form.cbmRate as number) || 90000).toLocaleString()}원</span>
                       </div>
-                      <div className="flex justify-between font-bold text-blue-700">
+                      <div className="flex justify-between text-gray-400">
+                        <span>1박스당 수량</span>
+                        <span className="font-semibold text-gray-600">{boxQty.toLocaleString()}개</span>
+                      </div>
+                      <div className="flex justify-between font-bold text-blue-700 border-t border-blue-100 pt-1">
                         <span>개당 해상운송비</span>
                         <span>{Math.round(((form.cbm as number) / Math.max(boxQty, 1)) * ((form.cbmRate as number) || 90000)).toLocaleString()}원</span>
                       </div>
