@@ -14,9 +14,10 @@ interface CurrencyItem {
   code: string;
   label: string;
   value: number;
-  unit?: string;     // 표시 단위 (예: "100엔" → unitAmount=100)
+  unit?: string;       // 표시 단위 (예: "100엔" → unitAmount=100)
   unitAmount?: number;
   decimals: number;
+  rateType?: string;   // "전신환매도" | "매매기준"
 }
 
 export default function HomePage() {
@@ -46,11 +47,13 @@ export default function HomePage() {
   }, []);
 
   // 통화 목록 (CNY·USD·JPY·VND)
+  // CNY는 전신환매도율(ttSell) — 실제 송금 시 적용 환율
+  // 나머지는 매매기준율 — 기준 참고용
   const currencies: CurrencyItem[] = rates ? [
-    { flag: "🇨🇳", code: "CNY", label: "위안", value: rates.ttSell,   decimals: 1 },
-    { flag: "🇺🇸", code: "USD", label: "달러", value: rates.usdKrw,   decimals: 0 },
-    { flag: "🇯🇵", code: "JPY", label: "엔",   value: rates.jpyKrw * 100, unit: "100엔", unitAmount: 100, decimals: 1 },
-    { flag: "🇻🇳", code: "VND", label: "동",   value: rates.vndKrw * 10000, unit: "1만동", unitAmount: 10000, decimals: 1 },
+    { flag: "🇨🇳", code: "CNY", label: "위안", value: rates.ttSell,          decimals: 1, rateType: "전신환매도" },
+    { flag: "🇺🇸", code: "USD", label: "달러", value: rates.usdKrw,          decimals: 0, rateType: "매매기준" },
+    { flag: "🇯🇵", code: "JPY", label: "엔",   value: rates.jpyKrw * 100,    unit: "100엔", unitAmount: 100, decimals: 1, rateType: "매매기준" },
+    { flag: "🇻🇳", code: "VND", label: "동",   value: rates.vndKrw * 10000,  unit: "1만동", unitAmount: 10000, decimals: 1, rateType: "매매기준" },
   ] : [];
 
   const menuItems = [
@@ -75,12 +78,17 @@ export default function HomePage() {
         <div className="mt-5 space-y-3">
           {/* 멀티 환율 */}
           <div className="rounded-2xl px-4 py-3" style={{ background: "rgba(255,255,255,0.1)" }}>
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-medium" style={{ color: "rgba(255,255,255,0.6)" }}>
-                실시간 환율 (→ 원)
-              </p>
+            <div className="flex items-center justify-between mb-2.5">
+              <div>
+                <p className="text-xs font-medium leading-tight" style={{ color: "rgba(255,255,255,0.7)" }}>
+                  실시간 환율
+                </p>
+                <p className="text-[10px] mt-0.5 leading-tight" style={{ color: "rgba(255,255,255,0.4)" }}>
+                  위안: 전신환매도율 · 기타: 매매기준율
+                </p>
+              </div>
               {rates?.date && (
-                <p className="text-xs" style={{ color: "rgba(255,255,255,0.35)" }}>{rates.date}</p>
+                <p className="text-[10px] shrink-0" style={{ color: "rgba(255,255,255,0.35)" }}>{rates.date}</p>
               )}
             </div>
             {rates ? (
@@ -96,6 +104,11 @@ export default function HomePage() {
                     <div className="text-[10px] leading-tight mt-0.5" style={{ color: "rgba(255,255,255,0.5)" }}>
                       {c.unit ?? `1${c.label}`}
                     </div>
+                    {c.rateType && (
+                      <div className="text-[9px] leading-tight mt-0.5" style={{ color: "rgba(255,255,255,0.3)" }}>
+                        {c.rateType}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
