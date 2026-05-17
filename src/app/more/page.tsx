@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Store, Handshake, ClipboardList, FileText, ChevronRight, Palette, User, Check, Pencil, Globe, Search } from "lucide-react";
+import { Store, Handshake, ClipboardList, FileText, ChevronRight, Palette, User, Check, Pencil, Globe, Search, Calculator } from "lucide-react";
 import { useState, useEffect } from "react";
 import { THEMES, ThemeId, applyTheme, getStoredTheme, getStoredUserName, setStoredUserName } from "@/lib/themes";
 import { LANGS, LangId, useTranslation } from "@/lib/i18n";
@@ -25,7 +25,8 @@ export default function MorePage() {
     { href: "/proposals", icon: FileText,      label: t("more.proposals"),   desc: t("more.proposals_sub"), color: "bg-green-100 text-green-600" },
     { href: "/buyers",    icon: Handshake,     label: t("more.buyers"),      desc: t("more.buyers_sub"),    color: "bg-pink-100 text-pink-600" },
     { href: "/orders",    icon: ClipboardList, label: t("more.orders"),      desc: t("more.orders_sub"),    color: "bg-gray-100 text-gray-600" },
-    { href: "/hs",        icon: Search,        label: t("nav.hs"),           desc: t("more.hs_sub"),        color: "bg-blue-100 text-blue-600" },
+    { href: "/hs",         icon: Search,      label: t("nav.hs"),           desc: t("more.hs_sub"),        color: "bg-blue-100 text-blue-600" },
+    { href: "/calculator", icon: Calculator,  label: "원가 계산기",          desc: "CNY → KRW 빠른 계산",   color: "bg-orange-100 text-orange-600" },
   ];
 
   const handleThemeChange = (id: ThemeId) => {

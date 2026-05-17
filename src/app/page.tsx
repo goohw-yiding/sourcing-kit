@@ -1,6 +1,6 @@
 "use client";
 
-import { Calculator, Camera } from "lucide-react";
+import { Camera } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getStoredUserName } from "@/lib/themes";
@@ -87,42 +87,18 @@ export default function HomePage() {
       {/* 현장 빠른 액션 */}
       <div className="px-4 py-5">
         <p className="text-xs font-semibold text-gray-400 mb-3 uppercase tracking-wide">{t("home.quick")}</p>
-        <div className="grid grid-cols-2 gap-3">
-          <Link href="/sourcing?new=1">
-            <div className="rounded-2xl p-5 flex flex-col gap-3 active:scale-95 transition-transform shadow-sm bg-[var(--primary)]">
-              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
-                <Camera className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <div className="font-bold text-sm text-white">{t("home.photo")}</div>
-                <div className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.6)" }}>{t("home.photo_sub")}</div>
-              </div>
+        <Link href="/sourcing?new=1">
+          <div className="rounded-2xl px-6 py-6 flex items-center gap-5 active:scale-[0.98] transition-transform shadow-sm bg-[var(--primary)]">
+            <div className="w-14 h-14 rounded-2xl bg-white/15 flex items-center justify-center shrink-0">
+              <Camera className="w-7 h-7 text-white" />
             </div>
-          </Link>
-          <Link href="/calculator">
-            <div className="rounded-2xl p-5 flex flex-col gap-3 active:scale-95 transition-transform shadow-sm bg-[#F97316]">
-              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
-                <Calculator className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <div className="font-bold text-sm text-white">{t("home.calc")}</div>
-                <div className="text-xs mt-0.5 text-orange-100">CNY → KRW</div>
-              </div>
+            <div className="flex-1">
+              <div className="font-extrabold text-lg text-white leading-tight">소싱 시작</div>
+              <div className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.65)" }}>사진 찍으면 AI가 원가까지 분석</div>
             </div>
-          </Link>
-          <Link href="/1688" className="col-span-2">
-            <div className="rounded-2xl px-5 py-4 flex items-center gap-4 active:scale-95 transition-transform shadow-sm bg-[#E8251F]">
-              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
-                <span className="text-white font-extrabold text-base leading-none">1688</span>
-              </div>
-              <div className="flex-1">
-                <div className="font-bold text-sm text-white">1688 소싱 검색</div>
-                <div className="text-xs mt-0.5 text-red-100">중국어로 도매 상품 바로 조회</div>
-              </div>
-              <span className="text-white/40 text-lg">›</span>
-            </div>
-          </Link>
-        </div>
+            <span className="text-white/40 text-2xl leading-none">›</span>
+          </div>
+        </Link>
       </div>
 
       {/* 메뉴 바로가기 */}
