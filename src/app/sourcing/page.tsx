@@ -257,7 +257,7 @@ export default function SourcingPage() {
           supplierName: (form as Record<string, unknown>)._supplierName || undefined,
         }),
       });
-      if (!res.ok) { alert("저장에 실패했습니다. 다시 시도해주세요."); return; }
+      if (!res.ok) { const err = await res.json().catch(() => ({})); alert(`저장에 실패했습니다.\n${err.error || res.status}`); return; }
       const created = await res.json();
       setItems((prev) => [created, ...prev]);
       setShowForm(false);

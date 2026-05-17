@@ -13,71 +13,80 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  await ensureDefaultTenant();
-  const body = await req.json();
+  try {
+    await ensureDefaultTenant();
+    const body = await req.json();
 
-  // supplierName이 있으면 동명 거래처 찾거나 새로 생성
-  let supplierId: string | null = body.supplierId || null;
-  if (!supplierId && body.supplierName?.trim()) {
-    const name = body.supplierName.trim();
-    const existing = await prisma.supplier.findFirst({
-      where: { tenantId: DEFAULT_TENANT_ID, name },
-    });
-    if (existing) {
-      supplierId = existing.id;
-    } else {
-      const created = await prisma.supplier.create({
-        data: { tenantId: DEFAULT_TENANT_ID, name },
+    // 숫자 파싱 (form이 string으로 전송할 수 있음)
+    const n = (v: unknown, def = 0) => parseFloat(String(v ?? def)) || def;
+
+    // supplierName이 있으면 동명 거래처 찾거나 새로 생성
+    let supplierId: string | null = body.supplierId || null;
+    if (!supplierId && body.supplierName?.trim()) {
+      const name = body.supplierName.trim();
+      const existing = await prisma.supplier.findFirst({
+        where: { tenantId: DEFAULT_TENANT_ID, name },
       });
-      supplierId = created.id;
+      if (existing) {
+        supplierId = existing.id;
+      } else {
+        const created = await prisma.supplier.create({
+          data: { tenantId: DEFAULT_TENANT_ID, name },
+        });
+        supplierId = created.id;
+      }
     }
+
+    const calc = calcLandedCost({
+      costCny: n(body.costCny),
+      exchangeRate: n(body.exchangeRate),
+      packagingCost: n(body.packagingCost),
+      chinaShipping: n(body.chinaShipping),
+      agentFeeRate: n(body.agentFeeRate),
+      cbm: n(body.cbm),
+      cbmRate: n(body.cbmRate, 90000),
+      hasCoOrigin: !!body.hasCoOrigin,
+      coOriginCost: n(body.coOriginCost),
+      customsRate: n(body.customsRate, 0.08),
+      inlandShipping: n(body.inlandShipping),
+    });
+
+    const product = await prisma.product.create({
+      data: {
+        tenantId: DEFAULT_TENANT_ID,
+        nameKr: body.nameKr,
+        nameCn: body.nameCn || null,
+        imageUrl: body.imageUrl || null,
+        memo: body.memo || null,
+        supplierId,
+        costCny: n(body.costCny),
+        exchangeRate: n(body.exchangeRate),
+        packagingCost: n(body.packagingCost),
+        chinaShipping: n(body.chinaShipping),
+        agentFeeRate: n(body.agentFeeRate),
+        cbm: n(body.cbm),
+        cbmRate: n(body.cbmRate, 90000),
+        hasCoOrigin: !!body.hasCoOrigin,
+        coOriginCost: n(body.coOriginCost),
+        customsRate: n(body.customsRate, 0.08),
+        hsCode: body.hsCode || null,
+        hsDescription: body.hsDescription || null,
+        moq: body.moq ? parseInt(String(body.moq)) : null,
+        inlandShipping: n(body.inlandShipping),
+        costKrw: calc.costKrw,
+        agentFee: calc.agentFee,
+        cbmShipping: calc.cbmShipping,
+        customsDuty: calc.customsDuty,
+        vat: calc.vat,
+        landedCost: calc.landedCost,
+        status: body.status ?? "sourcing",
+      },
+      include: { supplier: { select: { name: true, marketArea: true } } },
+    });
+    return NextResponse.json(product, { status: 201 });
+  } catch (err) {
+    console.error("[POST /api/products] error:", err);
+    const message = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ error: message }, { status: 500 });
   }
-
-  const calc = calcLandedCost({
-    costCny: body.costCny,
-    exchangeRate: body.exchangeRate,
-    packagingCost: body.packagingCost ?? 0,
-    chinaShipping: body.chinaShipping ?? 0,
-    agentFeeRate: body.agentFeeRate ?? 0,
-    cbm: body.cbm ?? 0,
-    cbmRate: body.cbmRate ?? 90000,
-    hasCoOrigin: body.hasCoOrigin ?? false,
-    coOriginCost: body.coOriginCost ?? 0,
-    customsRate: body.customsRate ?? 0.08,
-    inlandShipping: body.inlandShipping ?? 0,
-  });
-
-  const product = await prisma.product.create({
-    data: {
-      tenantId: DEFAULT_TENANT_ID,
-      nameKr: body.nameKr,
-      nameCn: body.nameCn || null,
-      imageUrl: body.imageUrl || null,
-      memo: body.memo || null,
-      supplierId,
-      costCny: body.costCny,
-      exchangeRate: body.exchangeRate,
-      packagingCost: body.packagingCost ?? 0,
-      chinaShipping: body.chinaShipping ?? 0,
-      agentFeeRate: body.agentFeeRate ?? 0,
-      cbm: body.cbm ?? 0,
-      cbmRate: body.cbmRate ?? 90000,
-      hasCoOrigin: body.hasCoOrigin ?? false,
-      coOriginCost: body.coOriginCost ?? 0,
-      customsRate: body.customsRate ?? 0.08,
-      hsCode: body.hsCode || null,
-      hsDescription: body.hsDescription || null,
-      moq: body.moq ?? null,
-      inlandShipping: body.inlandShipping ?? 0,
-      costKrw: calc.costKrw,
-      agentFee: calc.agentFee,
-      cbmShipping: calc.cbmShipping,
-      customsDuty: calc.customsDuty,
-      vat: calc.vat,
-      landedCost: calc.landedCost,
-      status: body.status ?? "sourcing",
-    },
-    include: { supplier: { select: { name: true, marketArea: true } } },
-  });
-  return NextResponse.json(product, { status: 201 });
 }

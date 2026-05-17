@@ -3,54 +3,62 @@ import { prisma, DEFAULT_TENANT_ID } from "@/lib/db";
 import { calcLandedCost } from "@/lib/calc";
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  const body = await req.json();
+  try {
+    const { id } = await params;
+    const body = await req.json();
 
-  const calc = calcLandedCost({
-    costCny: body.costCny,
-    exchangeRate: body.exchangeRate,
-    packagingCost: body.packagingCost ?? 0,
-    chinaShipping: body.chinaShipping ?? 0,
-    agentFeeRate: body.agentFeeRate ?? 0,
-    cbm: body.cbm ?? 0,
-    cbmRate: body.cbmRate ?? 90000,
-    hasCoOrigin: body.hasCoOrigin ?? false,
-    coOriginCost: body.coOriginCost ?? 0,
-    customsRate: body.customsRate ?? 0.08,
-    inlandShipping: body.inlandShipping ?? 0,
-  });
+    const n = (v: unknown, def = 0) => parseFloat(String(v ?? def)) || def;
 
-  const product = await prisma.product.update({
-    where: { id, tenantId: DEFAULT_TENANT_ID },
-    data: {
-      nameKr: body.nameKr,
-      nameCn: body.nameCn || null,
-      imageUrl: body.imageUrl || null,
-      memo: body.memo || null,
-      supplierId: body.supplierId || null,
-      costCny: body.costCny,
-      exchangeRate: body.exchangeRate,
-      packagingCost: body.packagingCost ?? 0,
-      chinaShipping: body.chinaShipping ?? 0,
-      agentFeeRate: body.agentFeeRate ?? 0,
-      cbm: body.cbm ?? 0,
-      cbmRate: body.cbmRate ?? 90000,
-      hasCoOrigin: body.hasCoOrigin ?? false,
-      coOriginCost: body.coOriginCost ?? 0,
-      customsRate: body.customsRate ?? 0.08,
-      hsCode: body.hsCode || null,
-      moq: body.moq ?? null,
-      inlandShipping: body.inlandShipping ?? 0,
-      costKrw: calc.costKrw,
-      agentFee: calc.agentFee,
-      cbmShipping: calc.cbmShipping,
-      customsDuty: calc.customsDuty,
-      vat: calc.vat,
-      landedCost: calc.landedCost,
-      status: body.status,
-    },
-  });
-  return NextResponse.json(product);
+    const calc = calcLandedCost({
+      costCny: n(body.costCny),
+      exchangeRate: n(body.exchangeRate),
+      packagingCost: n(body.packagingCost),
+      chinaShipping: n(body.chinaShipping),
+      agentFeeRate: n(body.agentFeeRate),
+      cbm: n(body.cbm),
+      cbmRate: n(body.cbmRate, 90000),
+      hasCoOrigin: !!body.hasCoOrigin,
+      coOriginCost: n(body.coOriginCost),
+      customsRate: n(body.customsRate, 0.08),
+      inlandShipping: n(body.inlandShipping),
+    });
+
+    const product = await prisma.product.update({
+      where: { id, tenantId: DEFAULT_TENANT_ID },
+      data: {
+        nameKr: body.nameKr,
+        nameCn: body.nameCn || null,
+        imageUrl: body.imageUrl || null,
+        memo: body.memo || null,
+        supplierId: body.supplierId || null,
+        costCny: n(body.costCny),
+        exchangeRate: n(body.exchangeRate),
+        packagingCost: n(body.packagingCost),
+        chinaShipping: n(body.chinaShipping),
+        agentFeeRate: n(body.agentFeeRate),
+        cbm: n(body.cbm),
+        cbmRate: n(body.cbmRate, 90000),
+        hasCoOrigin: !!body.hasCoOrigin,
+        coOriginCost: n(body.coOriginCost),
+        customsRate: n(body.customsRate, 0.08),
+        hsCode: body.hsCode || null,
+        moq: body.moq ? parseInt(String(body.moq)) : null,
+        inlandShipping: n(body.inlandShipping),
+        costKrw: calc.costKrw,
+        agentFee: calc.agentFee,
+        cbmShipping: calc.cbmShipping,
+        customsDuty: calc.customsDuty,
+        vat: calc.vat,
+        landedCost: calc.landedCost,
+        status: body.status,
+      },
+    });
+    return NextResponse.json(product);
+  } catch (err) {
+    console.error("[PUT /api/products/:id] error:", err);
+    const message = err instanceof Error ? err.message : String(err);
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
