@@ -77,8 +77,8 @@ export function Onboarding({ onDone }: Props) {
                 >
                   <span className="text-2xl leading-none">{l.flag}</span>
                   <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-gray-900 text-sm leading-tight">{l.label}</div>
-                    <div className="text-[10px] text-gray-400 mt-0.5 truncate">{l.name}</div>
+                    <div className="font-semibold text-gray-900 text-sm leading-tight">{l.country}</div>
+                    <div className="text-[10px] text-gray-400 mt-0.5 truncate">{l.label}</div>
                   </div>
                   {active && (
                     <div

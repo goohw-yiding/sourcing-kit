@@ -396,7 +396,8 @@ export default function MorePage() {
                   className={`flex items-center gap-2.5 px-3 py-3 rounded-2xl border-2 transition-all ${active ? "border-gray-900 bg-white shadow-md" : "border-gray-200 bg-white"}`}>
                   <span className="text-xl leading-none">{l.flag}</span>
                   <div className="flex-1 text-left min-w-0">
-                    <div className={`text-sm font-semibold truncate ${active ? "text-gray-900" : "text-gray-700"}`}>{l.label}</div>
+                    <div className={`text-sm font-semibold truncate ${active ? "text-gray-900" : "text-gray-700"}`}>{l.country}</div>
+                    <div className="text-[10px] text-gray-400 mt-0.5 truncate">{l.label}</div>
                   </div>
                   {active && (
                     <div className="w-4 h-4 rounded-full bg-gray-900 flex items-center justify-center shrink-0">
