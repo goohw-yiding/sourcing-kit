@@ -111,6 +111,12 @@ export default function SourcingPage() {
   const [selected, setSelected] = useState<Product | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sortBy, setSortBy] = useState<"date_desc" | "date_asc" | "price_desc" | "price_asc" | "landed_desc">("date_desc");
+  // 다운로드 모달
+  const [showDownload, setShowDownload] = useState(false);
+  const [dlFrom, setDlFrom] = useState("");
+  const [dlTo, setDlTo] = useState("");
+  const [dlMarket, setDlMarket] = useState("");
+  const [dlStatus, setDlStatus] = useState("");
   const [form, setForm] = useState<Partial<Product>>(DEFAULT_FORM);
   const [saving, setSaving] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -252,6 +258,32 @@ export default function SourcingPage() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.cbm, inlandRate, inlandManual, boxQty]);
+
+  // 시장 목록 (공급업체 marketArea 기준)
+  const marketList = Array.from(new Set(items.map(i => i.supplier?.marketArea).filter(Boolean) as string[])).sort();
+
+  // 다운로드 URL 빌더
+  const buildParams = (extra: Record<string, string> = {}) => {
+    const p = new URLSearchParams();
+    if (dlFrom)   p.set("from", dlFrom);
+    if (dlTo)     p.set("to", dlTo);
+    if (dlMarket) p.set("market", dlMarket);
+    if (dlStatus) p.set("status", dlStatus);
+    Object.entries(extra).forEach(([k, v]) => p.set(k, v));
+    return p.toString();
+  };
+
+  const openCatalog = (type: "internal" | "buyer") => {
+    const params = buildParams({ type, title: type === "buyer" ? "상품 제안서" : "소싱 카탈로그" });
+    window.open(`/sourcing/catalog?${params}`, "_blank");
+    setShowDownload(false);
+  };
+
+  const downloadExcel = () => {
+    const params = buildParams();
+    window.location.href = `/api/products/export?${params}`;
+    setShowDownload(false);
+  };
 
   const filtered = items
     .filter((i) => {
@@ -2236,7 +2268,97 @@ export default function SourcingPage() {
           <option value="price_asc">원가 낮은순</option>
           <option value="landed_desc">매입단가 높은순</option>
         </select>
+        {/* 다운로드 버튼 */}
+        <button
+          onClick={() => setShowDownload(true)}
+          className="shrink-0 w-8 h-8 rounded-lg bg-white border border-gray-200 flex items-center justify-center text-gray-500 active:bg-gray-50"
+          title="다운로드"
+        >
+          ⬇️
+        </button>
         </div>
+
+        {/* ── 다운로드 모달 ── */}
+        {showDownload && (
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setShowDownload(false)}>
+            <div className="w-full max-w-lg bg-white rounded-t-3xl p-5 pb-8 space-y-4" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between">
+                <h3 className="text-base font-bold text-gray-900">📥 다운로드</h3>
+                <button onClick={() => setShowDownload(false)} className="text-gray-400 text-xl">✕</button>
+              </div>
+
+              {/* 필터 */}
+              <div className="space-y-3 bg-gray-50 rounded-2xl p-4">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">필터 (선택)</p>
+
+                {/* 기간 */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500 w-10 shrink-0">기간</span>
+                  <input type="date" value={dlFrom} onChange={e => setDlFrom(e.target.value)}
+                    className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none" />
+                  <span className="text-gray-400 text-xs">~</span>
+                  <input type="date" value={dlTo} onChange={e => setDlTo(e.target.value)}
+                    className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none" />
+                </div>
+
+                {/* 시장 */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500 w-10 shrink-0">시장</span>
+                  <select value={dlMarket} onChange={e => setDlMarket(e.target.value)}
+                    className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none bg-white">
+                    <option value="">전체 시장</option>
+                    {marketList.map(m => <option key={m} value={m}>{m}</option>)}
+                  </select>
+                </div>
+
+                {/* 상태 */}
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500 w-10 shrink-0">상태</span>
+                  <select value={dlStatus} onChange={e => setDlStatus(e.target.value)}
+                    className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none bg-white">
+                    <option value="">전체 상태</option>
+                    <option value="sourcing">🔍 시장조사</option>
+                    <option value="ordered">📦 발주완료</option>
+                    <option value="shipping">🚢 선적중</option>
+                    <option value="arrived">✅ 입고완료</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* 다운로드 형식 */}
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">형식 선택</p>
+
+                <button onClick={() => openCatalog("internal")}
+                  className="w-full flex items-center gap-4 bg-orange-50 border border-orange-200 rounded-2xl px-4 py-3.5 active:opacity-70 text-left">
+                  <span className="text-2xl">📄</span>
+                  <div>
+                    <div className="font-bold text-gray-900 text-sm">내부용 카탈로그 PDF</div>
+                    <div className="text-xs text-gray-500 mt-0.5">사진 + 원가 포함 · 사내 검토용</div>
+                  </div>
+                </button>
+
+                <button onClick={() => openCatalog("buyer")}
+                  className="w-full flex items-center gap-4 bg-blue-50 border border-blue-200 rounded-2xl px-4 py-3.5 active:opacity-70 text-left">
+                  <span className="text-2xl">📋</span>
+                  <div>
+                    <div className="font-bold text-gray-900 text-sm">바이어 제안서 PDF</div>
+                    <div className="text-xs text-gray-500 mt-0.5">사진 + 공급가 · 원가 숨김 · 거래처용</div>
+                  </div>
+                </button>
+
+                <button onClick={downloadExcel}
+                  className="w-full flex items-center gap-4 bg-green-50 border border-green-200 rounded-2xl px-4 py-3.5 active:opacity-70 text-left">
+                  <span className="text-2xl">📊</span>
+                  <div>
+                    <div className="font-bold text-gray-900 text-sm">엑셀 다운로드</div>
+                    <div className="text-xs text-gray-500 mt-0.5">전체 데이터 · 원가 계산 포함 · .xlsx</div>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {loading ? (
           <div className="text-center py-12 text-gray-400 text-sm">불러오는 중...</div>
