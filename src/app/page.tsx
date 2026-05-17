@@ -110,6 +110,18 @@ export default function HomePage() {
               </div>
             </div>
           </Link>
+          <Link href="/1688" className="col-span-2">
+            <div className="rounded-2xl px-5 py-4 flex items-center gap-4 active:scale-95 transition-transform shadow-sm bg-[#E8251F]">
+              <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+                <span className="text-white font-extrabold text-base leading-none">1688</span>
+              </div>
+              <div className="flex-1">
+                <div className="font-bold text-sm text-white">1688 소싱 검색</div>
+                <div className="text-xs mt-0.5 text-red-100">중국어로 도매 상품 바로 조회</div>
+              </div>
+              <span className="text-white/40 text-lg">›</span>
+            </div>
+          </Link>
         </div>
       </div>
 
