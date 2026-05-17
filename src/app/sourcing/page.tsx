@@ -135,13 +135,15 @@ export default function SourcingPage() {
 
   // ── New state ──
   const [rateInfo, setRateInfo] = useState<{baseRate: number; ttSell: number; ttBuy: number; usdKrw: number; date: string} | null>(null);
-  const [priceMode, setPriceMode] = useState<"cny" | "krw" | "usd">("cny");
+  const [priceMode, setPriceMode] = useState<"cny" | "krw" | "usd" | "jpy">("cny");
   const [krwInput, setKrwInput] = useState(0);
   const [usdInput, setUsdInput] = useState(0);
+  const [jpyInput, setJpyInput] = useState(0);
   const [packMode, setPackMode] = useState<"cny" | "krw" | "usd">("cny");
   const [packCnyStr, setPackCnyStr] = useState("");   // 소수점 유지를 위해 string
   const [packUsdStr, setPackUsdStr] = useState("");   // 소수점 유지를 위해 string
   const [usdKrwRate, setUsdKrwRate] = useState(1350);
+  const [jpyKrwRate, setJpyKrwRate] = useState(9.2);
   const [hsQuery, setHsQuery] = useState("");
   const [hsResults, setHsResults] = useState<{hsCode: string; description: string}[]>([]);
   const [hsLoading, setHsLoading] = useState(false);
@@ -224,6 +226,7 @@ export default function SourcingPage() {
       setForm((p) => ({ ...p, exchangeRate: rate }));
       setRateInfo({ baseRate: d.baseRate || rate, ttSell: d.ttSell || rate, ttBuy: d.ttBuy || rate, usdKrw: d.usdKrw || 1350, date: d.date || "" });
       if (d.usdKrw) setUsdKrwRate(d.usdKrw);
+      if (d.jpyKrw) setJpyKrwRate(d.jpyKrw);
     } catch { /* ignore */ }
   }, []);
 
@@ -530,13 +533,21 @@ export default function SourcingPage() {
     setF("costCny", Math.round((krw / ((form.exchangeRate as number) || 193.5)) * 100) / 100);
   };
 
-  const handleModeChange = (mode: "cny" | "krw" | "usd") => {
+  const handleJpyInput = (v: number) => {
+    setJpyInput(v);
+    const krw = v * jpyKrwRate;
+    setF("costCny", Math.round((krw / ((form.exchangeRate as number) || 193.5)) * 100) / 100);
+  };
+
+  const handleModeChange = (mode: "cny" | "krw" | "usd" | "jpy") => {
     const cny = (form.costCny as number) || 0;
     const rate = (form.exchangeRate as number) || 193.5;
     if (mode === "krw" && cny > 0) {
       setKrwInput(Math.round(cny * rate));
     } else if (mode === "usd" && cny > 0) {
       setUsdInput(Math.round((cny * rate / usdKrwRate) * 100) / 100);
+    } else if (mode === "jpy" && cny > 0) {
+      setJpyInput(Math.round((cny * rate / jpyKrwRate) * 10) / 10);
     }
     setPriceMode(mode);
   };
@@ -1175,9 +1186,10 @@ export default function SourcingPage() {
               <div className="flex items-center justify-between mb-2">
                 <label className="text-xs text-gray-500">원가 *</label>
                 <div className="flex bg-gray-100 rounded-xl overflow-hidden text-xs font-semibold">
-                  <button onClick={() => handleModeChange("cny")} className={`px-3 py-1 transition-colors ${priceMode === "cny" ? "bg-orange-500 text-white" : "text-gray-500"}`}>¥ 위안</button>
-                  <button onClick={() => handleModeChange("usd")} className={`px-3 py-1 transition-colors ${priceMode === "usd" ? "bg-green-600 text-white" : "text-gray-500"}`}>$ 달러</button>
-                  <button onClick={() => handleModeChange("krw")} className={`px-3 py-1 transition-colors ${priceMode === "krw" ? "bg-orange-500 text-white" : "text-gray-500"}`}>₩ 원</button>
+                  <button onClick={() => handleModeChange("cny")} className={`px-2.5 py-1 transition-colors ${priceMode === "cny" ? "bg-orange-500 text-white" : "text-gray-500"}`}>¥ 위안</button>
+                  <button onClick={() => handleModeChange("jpy")} className={`px-2.5 py-1 transition-colors ${priceMode === "jpy" ? "bg-red-500 text-white" : "text-gray-500"}`}>¥ 엔</button>
+                  <button onClick={() => handleModeChange("usd")} className={`px-2.5 py-1 transition-colors ${priceMode === "usd" ? "bg-green-600 text-white" : "text-gray-500"}`}>$ 달러</button>
+                  <button onClick={() => handleModeChange("krw")} className={`px-2.5 py-1 transition-colors ${priceMode === "krw" ? "bg-orange-500 text-white" : "text-gray-500"}`}>₩ 원</button>
                 </div>
               </div>
               {priceMode === "cny" && (
@@ -1200,6 +1212,19 @@ export default function SourcingPage() {
                     </div>
                   )}
                   <p className="text-xs text-gray-400 mt-1">💡 캔톤페어·광저우 달러 가격 입력용</p>
+                </>
+              )}
+              {priceMode === "jpy" && (
+                <>
+                  <input type="number" inputMode="decimal" value={jpyInput || ""} onChange={(e) => handleJpyInput(parseFloat(e.target.value) || 0)}
+                    placeholder="0" className="w-full border-2 border-red-200 rounded-xl px-3 py-3 text-xl font-bold focus:outline-none focus:border-red-400" />
+                  {jpyInput > 0 && (
+                    <div className="mt-1 space-y-0.5">
+                      <p className="text-xs text-red-500">≈ {Math.round(jpyInput * jpyKrwRate).toLocaleString()}원 ({jpyKrwRate.toFixed(2)}원/¥)</p>
+                      <p className="text-xs text-orange-500">≈ ¥{form.costCny} CNY ({(form.exchangeRate as number || 193.5).toFixed(1)}원/CNY)</p>
+                    </div>
+                  )}
+                  <p className="text-xs text-gray-400 mt-1">💡 일본 전시회·도매가 입력용</p>
                 </>
               )}
               {priceMode === "krw" && (
