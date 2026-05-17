@@ -257,6 +257,7 @@ export default function SourcingPage() {
     .filter((i) => {
       const matchSearch = i.nameKr.includes(search) || i.nameCn?.includes(search) || i.supplier?.name?.includes(search);
       const matchStatus = statusFilter === "all"
+        || (statusFilter === "sourcing" && (i.status === "sourcing" || i.status === "proposed"))
         || (statusFilter === "shipping" && (i.status === "shipping" || i.status === "shipped"))
         || i.status === statusFilter;
       return matchSearch && matchStatus;
@@ -2206,8 +2207,7 @@ export default function SourcingPage() {
         <div className="flex gap-1.5 overflow-x-auto pb-0.5 scrollbar-none flex-1">
           {[
             { key: "all",      label: `전체 ${items.length}` },
-            { key: "sourcing", label: `🔍 시장조사 ${items.filter(i => i.status === "sourcing").length}` },
-            { key: "proposed", label: `📋 제안 ${items.filter(i => i.status === "proposed").length}` },
+            { key: "sourcing", label: `🔍 시장조사 ${items.filter(i => i.status === "sourcing" || i.status === "proposed").length}` },
             { key: "ordered",  label: `📦 발주 ${items.filter(i => i.status === "ordered").length}` },
             { key: "shipping", label: `🚢 선적 ${items.filter(i => i.status === "shipping" || i.status === "shipped").length}` },
             { key: "arrived",  label: `✅ 입고 ${items.filter(i => i.status === "arrived").length}` },
