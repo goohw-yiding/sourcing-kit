@@ -220,7 +220,7 @@ export default function SourcingPage() {
   // 내륙운송비 자동계산
   useEffect(() => {
     if (!inlandManual && (form.cbm as number ?? 0) > 0 && inlandRate > 0) {
-      setF("inlandShipping", Math.round(((form.cbm as number) / 4) * inlandRate / Math.max(boxQty, 1)));
+      setF("inlandShipping", Math.round(((form.cbm as number) / 4) * inlandRate));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.cbm, inlandRate, inlandManual, boxQty]);
@@ -1492,7 +1492,7 @@ export default function SourcingPage() {
                   </div>
                   {!inlandManual && (form.cbm as number ?? 0) > 0 && (
                     <p className="text-xs text-green-700 bg-green-50 rounded-lg px-2 py-1.5">
-                      {(form.cbm as number).toFixed(4)}m³ ÷ 4 × {inlandRate.toLocaleString()}원 ÷ {Math.max(boxQty, 1)}개 = <strong>{Math.round(((form.cbm as number) / 4) * inlandRate / Math.max(boxQty, 1)).toLocaleString()}원</strong>
+                      {(form.cbm as number).toFixed(4)}m³ ÷ 4 × {inlandRate.toLocaleString()}원 = <strong>{Math.round(((form.cbm as number) / 4) * inlandRate).toLocaleString()}원</strong>
                     </p>
                   )}
                   {inlandManual && (
