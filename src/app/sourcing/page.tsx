@@ -1868,10 +1868,13 @@ export default function SourcingPage() {
           {/* ── 5. 계산 결과 ── */}
           {(form.costCny ?? 0) > 0 && (
             <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-4 text-white shadow-lg">
-              <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center justify-between mb-1.5">
                 <h3 className="font-bold text-base">📊 원가 계산 결과</h3>
                 <span className="text-xs bg-orange-400/40 rounded-full px-2 py-0.5">참고용 견적</span>
               </div>
+              <p className="text-[10px] text-orange-200/80 mb-3 leading-snug">
+                ※ 세금(관세·부가세)은 신고 방식·품목·수입자 조건에 따라 달라질 수 있습니다
+              </p>
 
               {/* 매입단가 크게 */}
               <div className="mb-4">
