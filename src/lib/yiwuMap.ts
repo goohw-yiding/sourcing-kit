@@ -33,7 +33,7 @@ export const YIWU_DISTRICTS: DistrictData[] = [
       {
         floor: 1,
         floorLabel: "1층",
-        imageAvailable: false,
+        imageAvailable: true,
         sections: [
           {
             section: "꽃·직물존",
@@ -74,7 +74,7 @@ export const YIWU_DISTRICTS: DistrictData[] = [
       {
         floor: 3,
         floorLabel: "3층",
-        imageAvailable: false,
+        imageAvailable: true,
         sections: [
           {
             section: "공예·장식존",
@@ -91,7 +91,7 @@ export const YIWU_DISTRICTS: DistrictData[] = [
       {
         floor: 4,
         floorLabel: "4층",
-        imageAvailable: false,
+        imageAvailable: true,
         sections: [
           {
             section: "직판·특별관",
@@ -113,7 +113,7 @@ export const YIWU_DISTRICTS: DistrictData[] = [
       {
         floor: 1,
         floorLabel: "1층",
-        imageAvailable: false,
+        imageAvailable: true,
         sections: [
           {
             section: "가방·우산존",
@@ -130,7 +130,7 @@ export const YIWU_DISTRICTS: DistrictData[] = [
       {
         floor: 2,
         floorLabel: "2층",
-        imageAvailable: false,
+        imageAvailable: true,
         sections: [
           {
             section: "철물·공구존",
@@ -147,7 +147,7 @@ export const YIWU_DISTRICTS: DistrictData[] = [
       {
         floor: 3,
         floorLabel: "3층",
-        imageAvailable: false,
+        imageAvailable: true,
         sections: [
           {
             section: "전자·시계존",
@@ -164,7 +164,7 @@ export const YIWU_DISTRICTS: DistrictData[] = [
       {
         floor: 4,
         floorLabel: "4층",
-        imageAvailable: false,
+        imageAvailable: true,
         sections: [
           {
             section: "전자기기·직판존",
@@ -181,7 +181,7 @@ export const YIWU_DISTRICTS: DistrictData[] = [
       {
         floor: 5,
         floorLabel: "5층",
-        imageAvailable: false,
+        imageAvailable: true,
         sections: [
           {
             section: "무역기관·서비스존",
@@ -204,7 +204,7 @@ export const YIWU_DISTRICTS: DistrictData[] = [
       {
         floor: 1,
         floorLabel: "1층",
-        imageAvailable: false,
+        imageAvailable: true,
         sections: [
           {
             section: "안경·문구존",
@@ -220,7 +220,7 @@ export const YIWU_DISTRICTS: DistrictData[] = [
       {
         floor: 2,
         floorLabel: "2층",
-        imageAvailable: false,
+        imageAvailable: true,
         sections: [
           {
             section: "사무·스포츠존",
@@ -235,7 +235,7 @@ export const YIWU_DISTRICTS: DistrictData[] = [
       {
         floor: 3,
         floorLabel: "3층",
-        imageAvailable: false,
+        imageAvailable: true,
         sections: [
           {
             section: "화장품·의류부속존",
@@ -250,7 +250,7 @@ export const YIWU_DISTRICTS: DistrictData[] = [
       {
         floor: 4,
         floorLabel: "4층",
-        imageAvailable: false,
+        imageAvailable: true,
         sections: [
           {
             section: "화장품·부속 직판존",
@@ -266,7 +266,7 @@ export const YIWU_DISTRICTS: DistrictData[] = [
       {
         floor: 5,
         floorLabel: "5층",
-        imageAvailable: false,
+        imageAvailable: true,
         sections: [
           {
             section: "의류부속존",
@@ -288,7 +288,7 @@ export const YIWU_DISTRICTS: DistrictData[] = [
       {
         floor: 1,
         floorLabel: "1층",
-        imageAvailable: false,
+        imageAvailable: true,
         sections: [
           {
             section: "양말·모자·장갑존",
@@ -305,7 +305,7 @@ export const YIWU_DISTRICTS: DistrictData[] = [
       {
         floor: 2,
         floorLabel: "2층",
-        imageAvailable: false,
+        imageAvailable: true,
         sections: [
           {
             section: "생활잡화·신발존",
@@ -323,7 +323,7 @@ export const YIWU_DISTRICTS: DistrictData[] = [
       {
         floor: 3,
         floorLabel: "3층",
-        imageAvailable: false,
+        imageAvailable: true,
         sections: [
           {
             section: "속옷·벨트·스카프존",
@@ -338,7 +338,7 @@ export const YIWU_DISTRICTS: DistrictData[] = [
       {
         floor: 4,
         floorLabel: "4층",
-        imageAvailable: false,
+        imageAvailable: true,
         sections: [
           {
             section: "속옷·신발·스카프존",
@@ -354,7 +354,7 @@ export const YIWU_DISTRICTS: DistrictData[] = [
       {
         floor: 5,
         floorLabel: "5층",
-        imageAvailable: false,
+        imageAvailable: true,
         sections: [
           {
             section: "그림·생활잡화존",
@@ -376,7 +376,7 @@ export const YIWU_DISTRICTS: DistrictData[] = [
       {
         floor: 1,
         floorLabel: "1층",
-        imageAvailable: false,
+        imageAvailable: true,
         sections: [
           {
             section: "종합·주얼리존",
@@ -393,7 +393,7 @@ export const YIWU_DISTRICTS: DistrictData[] = [
       {
         floor: 2,
         floorLabel: "2층",
-        imageAvailable: false,
+        imageAvailable: true,
         sections: [
           {
             section: "혼례·침구·반려동물존",
@@ -409,7 +409,7 @@ export const YIWU_DISTRICTS: DistrictData[] = [
       {
         floor: 3,
         floorLabel: "3층",
-        imageAvailable: false,
+        imageAvailable: true,
         sections: [
           {
             section: "호텔·커튼·방직존",
@@ -424,7 +424,7 @@ export const YIWU_DISTRICTS: DistrictData[] = [
       {
         floor: 4,
         floorLabel: "4층",
-        imageAvailable: false,
+        imageAvailable: true,
         sections: [
           {
             section: "자동차용품존",
@@ -438,7 +438,7 @@ export const YIWU_DISTRICTS: DistrictData[] = [
       {
         floor: 5,
         floorLabel: "5층",
-        imageAvailable: false,
+        imageAvailable: true,
         sections: [
           {
             section: "인터넷쇼핑존",
@@ -459,7 +459,7 @@ export const YIWU_DISTRICTS: DistrictData[] = [
       {
         floor: 1,
         floorLabel: "1층",
-        imageAvailable: false,
+        imageAvailable: true,
         sections: [
           {
             section: "주얼리·패션·완구존",
@@ -474,7 +474,7 @@ export const YIWU_DISTRICTS: DistrictData[] = [
       {
         floor: 2,
         floorLabel: "2층",
-        imageAvailable: false,
+        imageAvailable: true,
         sections: [
           {
             section: "뷰티·유아동존",
@@ -489,7 +489,7 @@ export const YIWU_DISTRICTS: DistrictData[] = [
       {
         floor: 3,
         floorLabel: "3층",
-        imageAvailable: false,
+        imageAvailable: true,
         sections: [
           {
             section: "스마트기기·홈·여행존",
