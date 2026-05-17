@@ -15,6 +15,7 @@ export function ChinesePhrase({ phrases }: Props) {
     // 재생 중이면 정지
     if (audioRef.current) {
       audioRef.current.pause();
+      audioRef.current.src = "";
       audioRef.current = null;
     }
     if (playing === idx) {
@@ -25,66 +26,71 @@ export function ChinesePhrase({ phrases }: Props) {
     setPlaying(idx);
     setError(null);
 
-    // 1차: 서버 프록시 (Google TTS) — 가장 자연스러운 중국어 음성
+    // 1차: 서버 TTS (Edge TTS → Google TTS 폴백)
+    // fetch → blob → objectURL 방식 (모바일 자동재생 제한 우회)
     try {
-      const url = `/api/tts?text=${encodeURIComponent(cn)}&lang=zh-CN`;
-      const audio = new Audio(url);
+      const res = await fetch(`/api/tts?text=${encodeURIComponent(cn)}&lang=zh-CN`);
+      if (!res.ok) throw new Error(`TTS API ${res.status}`);
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+
+      const audio = new Audio();
       audioRef.current = audio;
 
-      await new Promise<void>((resolve, reject) => {
-        audio.oncanplaythrough = () => {
-          audio.play().then(resolve).catch(reject);
-        };
-        audio.onerror = () => reject(new Error("audio load error"));
-        audio.onended = () => {
-          setPlaying(null);
-        };
-        // 타임아웃 3초
-        setTimeout(() => reject(new Error("timeout")), 3000);
-      });
+      audio.src = url;
+      audio.onended = () => {
+        setPlaying(null);
+        URL.revokeObjectURL(url);
+      };
+      audio.onerror = () => {
+        setPlaying(null);
+        URL.revokeObjectURL(url);
+      };
+
+      await audio.play();
       return;
     } catch (e) {
-      console.warn("[TTS] Google TTS 실패, Web Speech API 시도:", e);
+      console.warn("[TTS] 서버 TTS 실패, Web Speech 시도:", e);
     }
 
     // 2차 폴백: Web Speech API (기기 내장 음성)
     if (typeof window !== "undefined" && window.speechSynthesis) {
-      const trySpeak = () => {
-        window.speechSynthesis.cancel();
-        const u = new SpeechSynthesisUtterance(cn);
-        u.lang = "zh-CN";
-        u.rate = 0.8;
+      try {
+        await new Promise<void>((resolve, reject) => {
+          window.speechSynthesis.cancel();
+          const u = new SpeechSynthesisUtterance(cn);
+          u.lang = "zh-CN";
+          u.rate = 0.8;
 
-        // zh-CN 음성 선택 (있으면)
-        const voices = window.speechSynthesis.getVoices();
-        const zhVoice =
-          voices.find((v) => v.lang === "zh-CN") ||
-          voices.find((v) => v.lang.startsWith("zh"));
-        if (zhVoice) u.voice = zhVoice;
+          const voices = window.speechSynthesis.getVoices();
+          const zhVoice =
+            voices.find((v) => v.lang === "zh-CN") ||
+            voices.find((v) => v.lang.startsWith("zh"));
+          if (zhVoice) u.voice = zhVoice;
 
-        u.onend = () => setPlaying(null);
-        u.onerror = () => {
-          setPlaying(null);
-          setError(idx);
-        };
+          u.onend = () => { setPlaying(null); resolve(); };
+          u.onerror = (e) => reject(e);
 
-        window.speechSynthesis.speak(u);
-      };
+          // 음성 로딩 대기 후 실행
+          if (voices.length === 0) {
+            window.speechSynthesis.onvoiceschanged = () => {
+              window.speechSynthesis.onvoiceschanged = null;
+              window.speechSynthesis.speak(u);
+            };
+          } else {
+            window.speechSynthesis.speak(u);
+          }
 
-      const voices = window.speechSynthesis.getVoices();
-      if (voices.length === 0) {
-        // 음성 로딩 대기
-        window.speechSynthesis.onvoiceschanged = () => {
-          window.speechSynthesis.onvoiceschanged = null;
-          trySpeak();
-        };
-      } else {
-        trySpeak();
+          setTimeout(() => reject(new Error("timeout")), 5000);
+        });
+        return;
+      } catch (e) {
+        console.warn("[TTS] Web Speech 실패:", e);
       }
-      return;
     }
 
-    // 둘 다 실패
+    // 모두 실패
     setPlaying(null);
     setError(idx);
   }, [playing]);
@@ -102,29 +108,21 @@ export function ChinesePhrase({ phrases }: Props) {
       {open && (
         <div className="mt-2 space-y-2">
           {phrases.map((p, i) => (
-            <div
-              key={i}
-              className="bg-red-50 border border-red-100 rounded-xl px-3 py-2.5 flex items-center gap-3"
-            >
+            <div key={i} className="bg-red-50 border border-red-100 rounded-xl px-3 py-2.5 flex items-center gap-3">
               <div className="flex-1 min-w-0">
                 <div className="text-lg font-bold text-red-700 leading-tight">{p.cn}</div>
                 <div className="text-xs text-red-400 mt-0.5">{p.pinyin}</div>
                 <div className="text-xs text-gray-500 mt-0.5">{p.kr}</div>
                 {error === i && (
-                  <div className="text-[10px] text-orange-500 mt-0.5">음성 재생 불가 (네트워크 확인)</div>
+                  <div className="text-[10px] text-orange-500 mt-0.5">음성 재생 실패 · 네트워크를 확인해주세요</div>
                 )}
               </div>
-
               <button
                 onClick={() => speak(p.cn, i)}
-                className={`shrink-0 w-9 h-9 text-white rounded-full flex items-center justify-center text-base active:scale-95 shadow transition-colors ${
-                  playing === i
-                    ? "bg-red-300 animate-pulse"
-                    : error === i
-                    ? "bg-orange-400"
-                    : "bg-red-500"
+                className={`shrink-0 w-10 h-10 text-white rounded-full flex items-center justify-center text-lg active:scale-95 shadow transition-all ${
+                  playing === i ? "bg-red-300 scale-95" :
+                  error === i  ? "bg-orange-400" : "bg-red-500"
                 }`}
-                title="발음 듣기"
               >
                 {playing === i ? "⏸" : error === i ? "⚠️" : "🔊"}
               </button>
