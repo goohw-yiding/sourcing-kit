@@ -146,6 +146,8 @@ export default function SourcingPage() {
   const [agentFeeUsdStr, setAgentFeeUsdStr] = useState("");
   // 에이전트 수수료 결과 표시 통화
   const [agentFeeResultMode, setAgentFeeResultMode] = useState<"cny" | "usd" | "krw">("krw");
+  // USD 환율 선택 모드
+  const [usdRateMode, setUsdRateMode] = useState<"base" | "sell" | "buy">("base");
   // 발주 모달
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [orderForm, setOrderForm] = useState({ quantity: "", totalCny: "", memo: "" });
@@ -992,15 +994,31 @@ export default function SourcingPage() {
                   <p className="text-sm font-semibold">{rateInfo.ttBuy.toFixed(2)}</p>
                 </div>
               </div>
-              {/* USD/KRW */}
-              <div className="bg-green-50 rounded-xl px-3 py-2 flex items-center justify-between mb-2">
-                <span className="text-xs text-green-700 font-medium">$ USD/KRW</span>
-                <div className="flex items-center gap-1">
-                  <input type="number" value={usdKrwRate || ""} onChange={(e) => setUsdKrwRate(parseFloat(e.target.value) || 1350)}
-                    className="w-20 text-right border border-green-200 rounded-lg px-2 py-1 text-sm font-bold text-green-800 bg-white focus:outline-none" />
-                  <span className="text-xs text-green-600">원/$</span>
-                </div>
-              </div>
+              {/* USD/KRW — CNY와 동일한 3탭 형식 */}
+              {(() => {
+                const usdBase = rateInfo.usdKrw;
+                const usdSell = Math.round(usdBase * 1.0175);
+                const usdBuy  = Math.round(usdBase * 0.9825);
+                const modes = [
+                  { key: "base" as const, label: "기준율", val: usdBase },
+                  { key: "sell" as const, label: "송금율 ✓", val: usdSell },
+                  { key: "buy"  as const, label: "매입율", val: usdBuy  },
+                ];
+                return (
+                  <div className="mb-2">
+                    <p className="text-xs text-gray-400 mb-1.5">$ USD/KRW</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {modes.map(m => (
+                        <button key={m.key} onClick={() => { setUsdRateMode(m.key); setUsdKrwRate(m.val); }}
+                          className={`rounded-xl p-2 text-center transition-colors ${usdRateMode === m.key ? "bg-green-100 border border-green-300" : "bg-gray-50"}`}>
+                          <p className={`text-xs font-medium mb-0.5 ${usdRateMode === m.key ? "text-green-600" : "text-gray-400"}`}>{m.label}</p>
+                          <p className={`text-sm font-bold ${usdRateMode === m.key ? "text-green-700" : "text-gray-600"}`}>{m.val.toLocaleString()}</p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
               {/* 계산에 사용하는 환율 */}
               <div>
                 <p className="text-xs text-gray-400 mb-1">계산에 사용하는 환율</p>
@@ -1088,6 +1106,24 @@ export default function SourcingPage() {
                     onChange={(e) => setF("customsRate", (parseFloat(e.target.value) || 0) / 100)}
                     placeholder="8"
                     className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange-400" />
+                  {/* 관세액 + 부가세 미리보기 */}
+                  {(form.costCny as number) > 0 && (() => {
+                    const costKrw = Math.round((form.costCny as number) * ((form.exchangeRate as number) || 193.5));
+                    const dutyAmt = Math.round(costKrw * ((form.customsRate as number) || 0.08));
+                    const vatAmt  = Math.round((costKrw + dutyAmt) * 0.1);
+                    return (
+                      <div className="mt-1.5 bg-orange-50 rounded-xl px-3 py-2 space-y-1">
+                        <div className="flex justify-between text-xs text-gray-600">
+                          <span>관세액 ({((form.customsRate as number || 0.08) * 100).toFixed(0)}%)</span>
+                          <span className="font-semibold">{dutyAmt.toLocaleString()}원</span>
+                        </div>
+                        <div className="flex justify-between text-xs text-gray-600 border-t border-orange-100 pt-1">
+                          <span>부가세 <span className="text-gray-400">(상품가+관세) × 10%</span></span>
+                          <span className="font-semibold text-orange-600">{vatAmt.toLocaleString()}원</span>
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {/* 원산지 증명 */}
@@ -1365,17 +1401,21 @@ export default function SourcingPage() {
                   {/* 결과 */}
                   {(form.cbm as number) > 0 && boxQty > 0 && (
                     <div className="bg-blue-50 rounded-xl p-3 text-xs space-y-1 mt-2">
-                      <div className="flex justify-between text-gray-600">
-                        <span>박스 CBM × CBM단가</span>
-                        <span>{(form.cbm as number).toFixed(4)} m³ × {((form.cbmRate as number) || 90000).toLocaleString()}원</span>
+                      <div className="flex justify-between text-gray-500">
+                        <span>박스 CBM</span>
+                        <span>{((form.cbm as number) * boxQty).toFixed(4)} m³ (박스 전체)</span>
                       </div>
-                      <div className="flex justify-between text-gray-400">
-                        <span>1박스당 수량</span>
-                        <span className="font-semibold text-gray-600">{boxQty.toLocaleString()}개</span>
+                      <div className="flex justify-between text-gray-500">
+                        <span>÷ 1박스당 수량</span>
+                        <span>{boxQty.toLocaleString()}개</span>
+                      </div>
+                      <div className="flex justify-between text-gray-600">
+                        <span>개당 CBM × CBM단가</span>
+                        <span>{(form.cbm as number).toFixed(4)} m³ × {((form.cbmRate as number) || 90000).toLocaleString()}원</span>
                       </div>
                       <div className="flex justify-between font-bold text-blue-700 border-t border-blue-100 pt-1">
                         <span>개당 해상운송비</span>
-                        <span>{Math.round(((form.cbm as number) / Math.max(boxQty, 1)) * ((form.cbmRate as number) || 90000)).toLocaleString()}원</span>
+                        <span>{Math.round((form.cbm as number) * ((form.cbmRate as number) || 90000)).toLocaleString()}원</span>
                       </div>
                     </div>
                   )}
@@ -1417,7 +1457,6 @@ export default function SourcingPage() {
 
           {/* ── 5. 계산 결과 ── */}
           {(form.costCny ?? 0) > 0 && (
-            {/* ── 원가 계산 결과 ── */}
             <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-2xl p-4 text-white shadow-lg">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-bold text-base">📊 원가 계산 결과</h3>
@@ -1513,53 +1552,6 @@ export default function SourcingPage() {
               </button>
             </div>
 
-            {/* ── 수익성 분석 (별도 카드) ── */}
-            {cr.landedCost > 0 && (
-              <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-                <h3 className="font-bold text-sm text-gray-700 mb-3">💹 수익성 분석</h3>
-
-                {/* 목표 마진율 */}
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="text-xs text-gray-500 shrink-0 w-16">목표 마진율</span>
-                  <div className="flex gap-1.5 flex-1">
-                    {[20, 30, 40, 50].map((v) => (
-                      <button key={v} onClick={() => setTargetMarginForm(v)}
-                        className={`flex-1 text-xs py-1.5 rounded-lg font-bold transition-colors ${targetMarginForm === v ? "bg-orange-500 text-white" : "bg-gray-100 text-gray-500"}`}>
-                        {v}%
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 수익 계산 결과 */}
-                <div className="bg-orange-50 rounded-xl p-3 space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">권장 판매가</span>
-                    <span className="text-xl font-bold text-orange-600">{sellPrice.toLocaleString()}원</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-gray-500">예상 마진</span>
-                    <span className="text-sm font-semibold text-orange-500">+{(sellPrice - cr.landedCost).toLocaleString()}원 ({targetMarginForm}%)</span>
-                  </div>
-                  {form.moq && (form.moq as number) > 0 && (
-                    <div className="border-t border-orange-100 pt-2 space-y-1.5">
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-500">MOQ 총매입 ({form.moq}개)</span>
-                        <span className="text-sm font-semibold text-gray-700">{(cr.landedCost * (form.moq as number)).toLocaleString()}원</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-500">MOQ 총매출 ({form.moq}개)</span>
-                        <span className="text-sm font-semibold text-green-600">{(sellPrice * (form.moq as number)).toLocaleString()}원</span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs text-gray-500">예상 총이익</span>
-                        <span className="text-sm font-bold text-green-600">+{((sellPrice - cr.landedCost) * (form.moq as number)).toLocaleString()}원</span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
           )}
 
           <button
@@ -1787,26 +1779,42 @@ export default function SourcingPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2">
-                    <button onClick={() => openNewTab(marketResult.searchLinks.naver)}
-                      className="bg-green-500 text-white text-xs font-bold py-2.5 rounded-xl text-center w-full">
-                      네이버쇼핑
-                    </button>
-                    <button onClick={() => openNewTab(marketResult.searchLinks.coupang)}
-                      className="bg-red-500 text-white text-xs font-bold py-2.5 rounded-xl text-center w-full">
-                      쿠팡
-                    </button>
-                    <button
-                      onClick={() => openNewTab(`https://m.1688.com/offer_search.htm?keywords=${encodeURIComponent(marketResult.productNameCn || marketResult.productNameKr)}`)}
-                      className="bg-orange-500 text-white text-xs font-bold py-2.5 rounded-xl text-center w-full"
-                    >
-                      1688 소싱
-                    </button>
-                  </div>
-
-                  <p className="text-[10px] text-gray-400 text-center pb-2">
-                    ※ 가격은 네이버쇼핑 실시간 데이터 기준 · AI 분석은 참고용입니다
-                  </p>
+                  {/* 검색 키워드 표시 */}
+                  {(() => {
+                    const krKw = marketResult.productNameKr || (marketResult.recommendKeywords[0] ?? "");
+                    const cnKw = marketResult.productNameCn || krKw;
+                    return (
+                      <>
+                        <div className="bg-gray-50 rounded-xl px-3 py-2 text-xs text-gray-500">
+                          <span className="font-medium text-gray-700">검색어:</span>{" "}
+                          🇰🇷 <span className="text-green-700 font-semibold">{krKw}</span>
+                          {marketResult.productNameCn && (
+                            <> &nbsp;·&nbsp; 🇨🇳 <span className="text-orange-600 font-semibold">{cnKw}</span></>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-3 gap-2">
+                          <button
+                            onClick={() => openNewTab(`https://search.shopping.naver.com/search/all?query=${encodeURIComponent(krKw)}`)}
+                            className="bg-green-500 text-white text-xs font-bold py-3 rounded-xl text-center w-full active:opacity-80">
+                            네이버쇼핑
+                          </button>
+                          <button
+                            onClick={() => openNewTab(`https://www.coupang.com/np/search?q=${encodeURIComponent(krKw)}`)}
+                            className="bg-red-500 text-white text-xs font-bold py-3 rounded-xl text-center w-full active:opacity-80">
+                            쿠팡
+                          </button>
+                          <button
+                            onClick={() => openNewTab(`https://s.1688.com/selloffer/offerlist.htm?keywords=${encodeURIComponent(cnKw)}`)}
+                            className="bg-orange-500 text-white text-xs font-bold py-3 rounded-xl text-center w-full active:opacity-80">
+                            1688
+                          </button>
+                        </div>
+                        <p className="text-[10px] text-gray-400 text-center pb-2">
+                          ※ 가격은 네이버쇼핑 실시간 데이터 기준 · AI 분석은 참고용입니다
+                        </p>
+                      </>
+                    );
+                  })()}
                 </>
               )}
             </div>
@@ -2147,26 +2155,42 @@ export default function SourcingPage() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-3 gap-2">
-                    <button onClick={() => openNewTab(marketResult.searchLinks.naver)}
-                      className="bg-green-500 text-white text-xs font-bold py-2.5 rounded-xl text-center w-full">
-                      네이버쇼핑
-                    </button>
-                    <button onClick={() => openNewTab(marketResult.searchLinks.coupang)}
-                      className="bg-red-500 text-white text-xs font-bold py-2.5 rounded-xl text-center w-full">
-                      쿠팡
-                    </button>
-                    <button
-                      onClick={() => openNewTab(`https://m.1688.com/offer_search.htm?keywords=${encodeURIComponent(marketResult.productNameCn || marketResult.productNameKr)}`)}
-                      className="bg-orange-500 text-white text-xs font-bold py-2.5 rounded-xl text-center w-full"
-                    >
-                      1688 소싱
-                    </button>
-                  </div>
-
-                  <p className="text-[10px] text-gray-400 text-center pb-2">
-                    ※ 가격은 네이버쇼핑 실시간 데이터 기준 · AI 분석은 참고용입니다
-                  </p>
+                  {/* 검색 키워드 표시 */}
+                  {(() => {
+                    const krKw = marketResult.productNameKr || (marketResult.recommendKeywords[0] ?? "");
+                    const cnKw = marketResult.productNameCn || krKw;
+                    return (
+                      <>
+                        <div className="bg-gray-50 rounded-xl px-3 py-2 text-xs text-gray-500">
+                          <span className="font-medium text-gray-700">검색어:</span>{" "}
+                          🇰🇷 <span className="text-green-700 font-semibold">{krKw}</span>
+                          {marketResult.productNameCn && (
+                            <> &nbsp;·&nbsp; 🇨🇳 <span className="text-orange-600 font-semibold">{cnKw}</span></>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-3 gap-2">
+                          <button
+                            onClick={() => openNewTab(`https://search.shopping.naver.com/search/all?query=${encodeURIComponent(krKw)}`)}
+                            className="bg-green-500 text-white text-xs font-bold py-3 rounded-xl text-center w-full active:opacity-80">
+                            네이버쇼핑
+                          </button>
+                          <button
+                            onClick={() => openNewTab(`https://www.coupang.com/np/search?q=${encodeURIComponent(krKw)}`)}
+                            className="bg-red-500 text-white text-xs font-bold py-3 rounded-xl text-center w-full active:opacity-80">
+                            쿠팡
+                          </button>
+                          <button
+                            onClick={() => openNewTab(`https://s.1688.com/selloffer/offerlist.htm?keywords=${encodeURIComponent(cnKw)}`)}
+                            className="bg-orange-500 text-white text-xs font-bold py-3 rounded-xl text-center w-full active:opacity-80">
+                            1688
+                          </button>
+                        </div>
+                        <p className="text-[10px] text-gray-400 text-center pb-2">
+                          ※ 가격은 네이버쇼핑 실시간 데이터 기준 · AI 분석은 참고용입니다
+                        </p>
+                      </>
+                    );
+                  })()}
                 </>
               )}
             </div>
