@@ -25,10 +25,10 @@ export async function GET(req: NextRequest) {
 
     const chunks: Buffer[] = [];
     await new Promise<void>((resolve, reject) => {
-      const readable = tts.toStream(text);
-      readable.on("data", (chunk: Buffer) => chunks.push(chunk));
-      readable.on("end", resolve);
-      readable.on("error", reject);
+      const { audioStream } = tts.toStream(text);
+      audioStream.on("data", (chunk: Buffer) => chunks.push(chunk));
+      audioStream.on("end", resolve);
+      audioStream.on("error", reject);
     });
 
     const buffer = Buffer.concat(chunks);
