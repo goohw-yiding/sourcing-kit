@@ -1,8 +1,9 @@
 ﻿"use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { ArrowLeft, Plus, Trash2, Share2, Check, ChevronRight, Eye } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 interface Buyer { id: string; name: string; }
 interface Product { id: string; nameKr: string; nameCn?: string | null; imageUrl?: string | null; costCny: number; landedCost?: number | null; supplier?: { name: string } | null; }
@@ -19,12 +20,14 @@ interface Proposal {
 
 type Step = "list" | "selectBuyer" | "selectProducts" | "setPrices" | "done";
 
-export default function ProposalsPage() {
+function ProposalsPage() {
+  const searchParams = useSearchParams();
   const [proposals, setProposals] = useState<Proposal[]>([]);
   const [buyers, setBuyers] = useState<Buyer[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [step, setStep] = useState<Step>("list");
+  // ?new=1 이면 바로 새 제안서 마법사 시작
+  const [step, setStep] = useState<Step>(searchParams.get("new") === "1" ? "selectBuyer" : "list");
   const [copied, setCopied] = useState<string | null>(null);
 
   // wizard state
@@ -399,6 +402,14 @@ export default function ProposalsPage() {
         </button>
       </div>
     </div>
+  );
+}
+
+export default function ProposalsPageWrapper() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#F4F6FA]" />}>
+      <ProposalsPage />
+    </Suspense>
   );
 }
 
