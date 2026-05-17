@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { getStoredUserName } from "@/lib/themes";
 import { useTranslation } from "@/lib/i18n";
 
-interface Stats { sourcing: number; proposed: number; ordered: number; }
+interface Stats { researching: number; inProgress: number; arrived: number; }
 
 export default function HomePage() {
   const { t } = useTranslation();
@@ -23,11 +23,11 @@ export default function HomePage() {
     fetch("/api/products")
       .then(r => r.json())
       .then((products: Array<{ status: string }>) => {
-        const s: Stats = { sourcing: 0, proposed: 0, ordered: 0 };
+        const s: Stats = { researching: 0, inProgress: 0, arrived: 0 };
         for (const p of products) {
-          if (p.status === "sourcing") s.sourcing++;
-          else if (p.status === "proposed") s.proposed++;
-          else if (p.status === "ordered") s.ordered++;
+          if (p.status === "sourcing" || p.status === "proposed") s.researching++;
+          else if (p.status === "ordered" || p.status === "shipping" || p.status === "shipped") s.inProgress++;
+          else if (p.status === "arrived") s.arrived++;
         }
         setStats(s);
       })
@@ -65,18 +65,24 @@ export default function HomePage() {
           {stats && (
             <div className="rounded-2xl px-4 py-3" style={{ background: "rgba(255,255,255,0.1)" }}>
               <p className="text-xs mb-2" style={{ color: "rgba(255,255,255,0.6)" }}>{t("home.stats")}</p>
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <div className="flex justify-between items-center">
-                  <span className="text-xs" style={{ color: "rgba(255,255,255,0.6)" }}>{t("home.reviewing")}</span>
-                  <span className="text-sm font-bold text-white">{stats.sourcing}</span>
+                  <span className="text-xs" style={{ color: "rgba(255,255,255,0.6)" }}>
+                    🔍 {t("home.researching")}
+                  </span>
+                  <span className="text-sm font-bold text-white">{stats.researching}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-xs" style={{ color: "rgba(255,255,255,0.6)" }}>{t("home.proposed")}</span>
-                  <span className="text-sm font-bold text-white">{stats.proposed}</span>
+                  <span className="text-xs" style={{ color: "rgba(255,255,255,0.6)" }}>
+                    📦 {t("home.in_progress")}
+                  </span>
+                  <span className="text-sm font-bold text-white">{stats.inProgress}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-xs" style={{ color: "rgba(255,255,255,0.6)" }}>{t("home.ordered")}</span>
-                  <span className="text-sm font-bold text-white">{stats.ordered}</span>
+                  <span className="text-xs" style={{ color: "rgba(255,255,255,0.6)" }}>
+                    ✅ {t("home.arrived")}
+                  </span>
+                  <span className="text-sm font-bold text-white">{stats.arrived}</span>
                 </div>
               </div>
             </div>
