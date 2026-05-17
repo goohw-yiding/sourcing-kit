@@ -146,7 +146,8 @@ export default function SourcingPage() {
   const [agentFeeUsdStr, setAgentFeeUsdStr] = useState("");
   // 에이전트 수수료 결과 표시 통화
   const [agentFeeResultMode, setAgentFeeResultMode] = useState<"cny" | "usd" | "krw">("krw");
-  // USD 환율 선택 모드
+  // CNY / USD 환율 선택 모드
+  const [cnyRateMode, setCnyRateMode] = useState<"base" | "sell" | "buy">("sell");
   const [usdRateMode, setUsdRateMode] = useState<"base" | "sell" | "buy">("base");
   // 1688 중국어 검색어 (번역 결과 캐시)
   const [cn1688Kw, setCn1688Kw] = useState<string>("");
@@ -196,11 +197,13 @@ export default function SourcingPage() {
 
   useEffect(() => { load(); }, [load]);
 
-  // 박스 CBM 자동계산
+  // 박스 CBM 자동계산 — cbmStr = 박스 전체 CBM, form.cbm = 개당 CBM
   useEffect(() => {
     if (cbmMode === "box" && boxQty > 0 && boxL > 0 && boxW > 0 && boxH > 0) {
-      const itemCbm = (boxL * boxW * boxH) / 1_000_000 / boxQty;
-      setF("cbm", Math.round(itemCbm * 1_000_000) / 1_000_000);
+      const totalCbm = (boxL * boxW * boxH) / 1_000_000;
+      const perUnit  = totalCbm / boxQty;
+      setF("cbm", Math.round(perUnit * 1_000_000) / 1_000_000);
+      setCbmStr(totalCbm.toFixed(3));  // 박스 전체 CBM, 소수점 3자리
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cbmMode, boxL, boxW, boxH, boxQty]);
@@ -580,12 +583,25 @@ export default function SourcingPage() {
             </div>
             <div className="text-3xl font-bold">{formatKrw(calc.landedCost)}</div>
             <div className="mt-3 pt-3 border-t border-orange-400/50 space-y-1 text-sm text-orange-100">
-              <div className="flex justify-between"><span>원화원가</span><span>{calc.costKrw.toLocaleString()}원</span></div>
-              {calc.agentFee > 0 && <div className="flex justify-between"><span>에이전트수수료({(selected.agentFeeRate * 100).toFixed(1)}%)</span><span>{calc.agentFee.toLocaleString()}원</span></div>}
-              {calc.cbmShipping > 0 && <div className="flex justify-between"><span>CBM운송비</span><span>{calc.cbmShipping.toLocaleString()}원</span></div>}
-              <div className="flex justify-between"><span>관세({(selected.customsRate * 100).toFixed(0)}%)</span><span>{calc.customsDuty.toLocaleString()}원</span></div>
-              <div className="flex justify-between"><span>부가세(10%)</span><span>{calc.vat.toLocaleString()}원</span></div>
-              {selected.inlandShipping > 0 && <div className="flex justify-between"><span>내륙운송</span><span>{selected.inlandShipping.toLocaleString()}원</span></div>}
+              {/* 상품값 */}
+              <div className="flex justify-between"><span>상품값 <span className="text-orange-300 text-xs">(¥{selected.costCny} × {selected.exchangeRate.toFixed(1)})</span></span><span>{calc.costKrw.toLocaleString()}원</span></div>
+              {/* 세금 */}
+              <div className="text-[10px] text-orange-300 pt-0.5">— 세금</div>
+              <div className="flex justify-between"><span>관세 ({(selected.customsRate * 100).toFixed(0)}%)</span><span>+{calc.customsDuty.toLocaleString()}원</span></div>
+              <div className="flex justify-between"><span>부가세 (10%)</span><span>+{calc.vat.toLocaleString()}원</span></div>
+              {/* 운송비 */}
+              {(calc.cbmShipping > 0 || selected.chinaShipping > 0 || selected.inlandShipping > 0) && (
+                <div className="text-[10px] text-orange-300 pt-0.5">— 운송비</div>
+              )}
+              {calc.cbmShipping > 0 && <div className="flex justify-between"><span>해상운송비 (CBM)</span><span>+{calc.cbmShipping.toLocaleString()}원</span></div>}
+              {selected.chinaShipping > 0 && <div className="flex justify-between"><span>중국내 운송비</span><span>+{selected.chinaShipping.toLocaleString()}원</span></div>}
+              {selected.inlandShipping > 0 && <div className="flex justify-between"><span>내륙운송비</span><span>+{selected.inlandShipping.toLocaleString()}원</span></div>}
+              {/* 부대비용 */}
+              {(selected.packagingCost > 0 || calc.agentFee > 0) && (
+                <div className="text-[10px] text-orange-300 pt-0.5">— 부대비용</div>
+              )}
+              {selected.packagingCost > 0 && <div className="flex justify-between"><span>포장비</span><span>+{selected.packagingCost.toLocaleString()}원</span></div>}
+              {calc.agentFee > 0 && <div className="flex justify-between"><span>에이전트수수료 ({(selected.agentFeeRate * 100).toFixed(1)}%)</span><span>+{calc.agentFee.toLocaleString()}원</span></div>}
             </div>
             {selected.moq && selected.moq > 0 && (
               <div className="mt-1 text-sm text-blue-600 font-medium">MOQ: {selected.moq.toLocaleString()}개</div>
@@ -1013,19 +1029,20 @@ export default function SourcingPage() {
                   갱신
                 </button>
               </div>
+              <p className="text-xs text-gray-400 mb-1.5">¥ CNY/KRW</p>
               <div className="grid grid-cols-3 gap-2 mb-2">
-                <div className="bg-gray-50 rounded-xl p-2 text-center">
-                  <p className="text-xs text-gray-400">기준율</p>
-                  <p className="text-sm font-semibold">{rateInfo.baseRate.toFixed(2)}</p>
-                </div>
-                <div className="bg-blue-50 rounded-xl p-2 text-center border border-blue-200">
-                  <p className="text-xs text-blue-500 font-medium">송금율 ✓</p>
-                  <p className="text-sm font-bold text-blue-700">{rateInfo.ttSell.toFixed(2)}</p>
-                </div>
-                <div className="bg-gray-50 rounded-xl p-2 text-center">
-                  <p className="text-xs text-gray-400">매입율</p>
-                  <p className="text-sm font-semibold">{rateInfo.ttBuy.toFixed(2)}</p>
-                </div>
+                {([
+                  { key: "base" as const, label: "기준율", val: rateInfo.baseRate },
+                  { key: "sell" as const, label: "송금율 ✓", val: rateInfo.ttSell },
+                  { key: "buy"  as const, label: "매입율", val: rateInfo.ttBuy },
+                ]).map(m => (
+                  <button key={m.key}
+                    onClick={() => { setCnyRateMode(m.key); setF("exchangeRate", m.val); }}
+                    className={`rounded-xl p-2 text-center transition-colors ${cnyRateMode === m.key ? "bg-blue-100 border border-blue-300" : "bg-gray-50"}`}>
+                    <p className={`text-xs font-medium mb-0.5 ${cnyRateMode === m.key ? "text-blue-600" : "text-gray-400"}`}>{m.label}</p>
+                    <p className={`text-sm font-bold ${cnyRateMode === m.key ? "text-blue-700" : "text-gray-600"}`}>{m.val.toFixed(2)}</p>
+                  </button>
+                ))}
               </div>
               {/* USD/KRW — CNY와 동일한 3탭 형식 */}
               {(() => {
@@ -1404,9 +1421,10 @@ export default function SourcingPage() {
                               const w = label === "세로" ? (parseFloat(e.target.value) || 0) : boxW;
                               const h = label === "높이" ? (parseFloat(e.target.value) || 0) : boxH;
                               if (l > 0 && w > 0 && h > 0) {
-                                const perUnit = Math.round((l * w * h / 1_000_000 / Math.max(boxQty, 1)) * 1_000_000) / 1_000_000;
-                                setF("cbm", perUnit);
-                                setCbmStr(String(perUnit));
+                                const totalCbm = l * w * h / 1_000_000;
+                                const perUnit  = totalCbm / Math.max(boxQty, 1);
+                                setF("cbm", Math.round(perUnit * 1_000_000) / 1_000_000);
+                                setCbmStr(totalCbm.toFixed(3));  // 박스 전체 CBM 표시
                               }
                             }}
                             placeholder="0"
@@ -1422,11 +1440,12 @@ export default function SourcingPage() {
                         onChange={(e) => {
                           const raw = e.target.value;
                           setCbmStr(raw);
-                          const v = parseFloat(raw) || 0;
-                          setF("cbm", v);
+                          const total = parseFloat(raw) || 0;
+                          // 직접 입력 = 박스 전체 CBM → 개당으로 나눠 저장
+                          setF("cbm", total / Math.max(boxQty, 1));
                           if (raw !== "") { setBoxL(0); setBoxW(0); setBoxH(0); }
                         }}
-                        placeholder="0.0000"
+                        placeholder="0.000"
                         className="flex-1 border-2 border-blue-200 rounded-xl px-3 py-2 text-sm font-mono focus:outline-none focus:border-blue-400 bg-white" />
                       <span className="text-xs text-gray-400">m³</span>
                     </div>
@@ -1436,7 +1455,7 @@ export default function SourcingPage() {
                     <div className="bg-blue-50 rounded-xl p-3 text-xs space-y-1 mt-2">
                       <div className="flex justify-between text-gray-500">
                         <span>박스 CBM</span>
-                        <span>{((form.cbm as number) * boxQty).toFixed(4)} m³ (박스 전체)</span>
+                        <span>{(parseFloat(cbmStr) || ((form.cbm as number) * boxQty)).toFixed(3)} m³ (박스 전체)</span>
                       </div>
                       <div className="flex justify-between text-gray-500">
                         <span>÷ 1박스당 수량</span>
@@ -1502,42 +1521,15 @@ export default function SourcingPage() {
                 <p className="text-4xl font-bold">{formatKrw(cr.landedCost)}</p>
               </div>
 
-              {/* 항목별 내역 */}
-              <div className="bg-white/10 rounded-xl p-3 space-y-1.5 text-sm">
+              {/* 항목별 내역 — 상품값 → 세금 → 운송비 → 부대비용 */}
+              <div className="bg-white/10 rounded-xl p-3 text-sm space-y-1">
+                {/* 상품값 */}
                 <div className="flex justify-between text-orange-100">
-                  <span>원화원가 <span className="text-orange-300 text-xs">(¥{form.costCny} × {(form.exchangeRate ?? 193.5).toFixed(1)})</span></span>
+                  <span>상품값 <span className="text-orange-300 text-xs">(¥{form.costCny} × {(form.exchangeRate ?? 193.5).toFixed(1)})</span></span>
                   <span>{cr.costKrw.toLocaleString()}원</span>
                 </div>
-                {(form.packagingCost as number) > 0 && (
-                  <div className="flex justify-between text-orange-100">
-                    <span>포장비</span>
-                    <span>+{(form.packagingCost as number).toLocaleString()}원</span>
-                  </div>
-                )}
-                {(form.chinaShipping as number) > 0 && (
-                  <div className="flex justify-between text-orange-100">
-                    <span>중국내 운송비</span>
-                    <span>+{(form.chinaShipping as number).toLocaleString()}원</span>
-                  </div>
-                )}
-                {cr.agentFee > 0 && (
-                  <div className="flex justify-between text-orange-100">
-                    <span>에이전트수수료 <span className="text-orange-300 text-xs">({((form.agentFeeRate as number) * 100).toFixed(1)}%)</span></span>
-                    <span>+{cr.agentFee.toLocaleString()}원</span>
-                  </div>
-                )}
-                {cr.cbmShipping > 0 && (
-                  <div className="flex justify-between text-orange-100">
-                    <span>해상운송비 <span className="text-orange-300 text-xs">(CBM)</span></span>
-                    <span>+{cr.cbmShipping.toLocaleString()}원</span>
-                  </div>
-                )}
-                {cr.coOriginCost > 0 && (
-                  <div className="flex justify-between text-orange-100">
-                    <span>원산지증명</span>
-                    <span>+{cr.coOriginCost.toLocaleString()}원</span>
-                  </div>
-                )}
+                {/* ── 세금 ── */}
+                <div className="text-[10px] text-orange-300 pt-0.5">— 세금</div>
                 <div className="flex justify-between text-orange-100">
                   <span>관세 <span className="text-orange-300 text-xs">({((form.customsRate ?? 0.08) * 100).toFixed(0)}%)</span></span>
                   <span>+{cr.customsDuty.toLocaleString()}원</span>
@@ -1546,13 +1538,52 @@ export default function SourcingPage() {
                   <span>부가세 <span className="text-orange-300 text-xs">(10%)</span></span>
                   <span>+{cr.vat.toLocaleString()}원</span>
                 </div>
+                {/* ── 운송비 ── */}
+                {(cr.cbmShipping > 0 || (form.chinaShipping as number) > 0 || (form.inlandShipping as number) > 0 || cr.coOriginCost > 0) && (
+                  <div className="text-[10px] text-orange-300 pt-0.5">— 운송비</div>
+                )}
+                {cr.cbmShipping > 0 && (
+                  <div className="flex justify-between text-orange-100">
+                    <span>해상운송비 <span className="text-orange-300 text-xs">(CBM)</span></span>
+                    <span>+{cr.cbmShipping.toLocaleString()}원</span>
+                  </div>
+                )}
+                {(form.chinaShipping as number) > 0 && (
+                  <div className="flex justify-between text-orange-100">
+                    <span>중국내 운송비</span>
+                    <span>+{(form.chinaShipping as number).toLocaleString()}원</span>
+                  </div>
+                )}
                 {(form.inlandShipping as number) > 0 && (
                   <div className="flex justify-between text-orange-100">
                     <span>내륙운송비</span>
                     <span>+{(form.inlandShipping as number).toLocaleString()}원</span>
                   </div>
                 )}
-                <div className="flex justify-between font-bold text-white border-t border-white/20 pt-1.5">
+                {cr.coOriginCost > 0 && (
+                  <div className="flex justify-between text-orange-100">
+                    <span>원산지증명</span>
+                    <span>+{cr.coOriginCost.toLocaleString()}원</span>
+                  </div>
+                )}
+                {/* ── 부대비용 ── */}
+                {((form.packagingCost as number) > 0 || cr.agentFee > 0) && (
+                  <div className="text-[10px] text-orange-300 pt-0.5">— 부대비용</div>
+                )}
+                {(form.packagingCost as number) > 0 && (
+                  <div className="flex justify-between text-orange-100">
+                    <span>포장비</span>
+                    <span>+{(form.packagingCost as number).toLocaleString()}원</span>
+                  </div>
+                )}
+                {cr.agentFee > 0 && (
+                  <div className="flex justify-between text-orange-100">
+                    <span>에이전트수수료 <span className="text-orange-300 text-xs">({((form.agentFeeRate as number) * 100).toFixed(1)}%)</span></span>
+                    <span>+{cr.agentFee.toLocaleString()}원</span>
+                  </div>
+                )}
+                {/* 합계 */}
+                <div className="flex justify-between font-bold text-white border-t border-white/20 pt-1.5 mt-0.5">
                   <span>매입단가 합계</span>
                   <span>{formatKrw(cr.landedCost)}</span>
                 </div>
