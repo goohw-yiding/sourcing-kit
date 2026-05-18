@@ -1,5 +1,5 @@
 "use client";
-import { useState, Suspense } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -11,6 +11,13 @@ const FEATURES = [
   { icon: "🗂️", title: "시장조사", sub: "현장에서 즉시 정리" },
 ];
 
+/** 카카오톡, 라인, 인스타그램 등 인앱브라우저 감지 */
+function detectWebView(): boolean {
+  if (typeof window === "undefined") return false;
+  const ua = navigator.userAgent;
+  return /KAKAOTALK|NAVER|Line|Instagram|FB_IAB|FBAN|Twitter|Snapchat|MicroMessenger|WebView/i.test(ua);
+}
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -20,6 +27,12 @@ function LoginForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [socialLoading, setSocialLoading] = useState<string | null>(null);
+  const [isWebView, setIsWebView] = useState(false);
+  const [showWebViewHint, setShowWebViewHint] = useState(false);
+
+  useEffect(() => {
+    setIsWebView(detectWebView());
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,6 +54,11 @@ function LoginForm() {
   };
 
   const handleSocialLogin = async (provider: string) => {
+    // 구글은 인앱 브라우저에서 차단됨 → 안내 메시지 표시
+    if (provider === "google" && isWebView) {
+      setShowWebViewHint(true);
+      return;
+    }
     setSocialLoading(provider);
     await signIn(provider, { callbackUrl });
   };
@@ -48,21 +66,18 @@ function LoginForm() {
   return (
     <div className="min-h-screen flex flex-col bg-[var(--primary)]">
 
-      {/* ── 첫번째 블럭: 앱 소개 헤더 (짙은 primary 색) ── */}
+      {/* ── 첫번째 블럭: 앱 소개 헤더 ── */}
       <div className="px-5 pt-14 pb-20 text-white relative overflow-hidden">
-        {/* 장식 원 */}
         <div className="absolute -right-12 -top-12 w-48 h-48 rounded-full bg-white/5 pointer-events-none" />
         <div className="absolute right-4 top-10 w-28 h-28 rounded-full bg-white/5 pointer-events-none" />
         <div className="absolute -left-8 bottom-4 w-32 h-32 rounded-full bg-white/5 pointer-events-none" />
 
         <div className="relative">
-          {/* 로고 + 앱명 */}
           <div className="text-center mb-7">
             <h1 className="text-4xl font-black tracking-tight mb-1">소싱킷</h1>
             <p className="text-sm text-white/60 font-medium">무역 소싱 관리 앱</p>
           </div>
 
-          {/* 특징 2×2 그리드 */}
           <div className="grid grid-cols-2 gap-2.5">
             {FEATURES.map((f, i) => (
               <div
@@ -78,12 +93,31 @@ function LoginForm() {
         </div>
       </div>
 
-      {/* ── 두번째 블럭: 로그인 폼 (흰색 카드, 둥근 상단) ── */}
+      {/* ── 두번째 블럭: 로그인 폼 ── */}
       <div className="flex-1 bg-white rounded-t-[2rem] -mt-6 shadow-2xl overflow-y-auto">
         <div className="px-5 pt-8 pb-28">
 
+          {/* 구글 인앱브라우저 안내 */}
+          {showWebViewHint && (
+            <div className="mb-4 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3.5 text-sm">
+              <div className="font-bold text-amber-700 mb-1">⚠️ 구글 로그인 안내</div>
+              <div className="text-amber-600 leading-relaxed">
+                카카오톡/앱 내 브라우저에서는 구글 로그인이 지원되지 않습니다.
+                <br />
+                <strong>우측 하단 … 버튼 → 기본 브라우저로 열기</strong>를 선택해 주세요.
+              </div>
+              <button
+                onClick={() => setShowWebViewHint(false)}
+                className="mt-2 text-xs text-amber-500 underline"
+              >
+                닫기
+              </button>
+            </div>
+          )}
+
           {/* 소셜 로그인 */}
           <div className="space-y-3 mb-6">
+            {/* 카카오 */}
             <button
               type="button"
               onClick={() => handleSocialLogin("kakao")}
@@ -96,23 +130,12 @@ function LoginForm() {
               {socialLoading === "kakao" ? "연결 중..." : "카카오로 시작하기"}
             </button>
 
-            <button
-              type="button"
-              onClick={() => handleSocialLogin("naver")}
-              disabled={!!socialLoading}
-              className="w-full bg-[#03C75A] text-white rounded-xl py-3.5 font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                <path d="M16.273 12.845L7.376 0H0v24h7.727V11.155L16.624 24H24V0h-7.727z" fill="white"/>
-              </svg>
-              {socialLoading === "naver" ? "연결 중..." : "네이버로 시작하기"}
-            </button>
-
+            {/* 구글 */}
             <button
               type="button"
               onClick={() => handleSocialLogin("google")}
               disabled={!!socialLoading}
-              className="w-full bg-white text-gray-700 border border-gray-300 rounded-xl py-3.5 font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60"
+              className="w-full bg-white text-gray-700 border border-gray-300 rounded-xl py-3.5 font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60 relative"
             >
               <svg width="20" height="20" viewBox="0 0 24 24">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -121,6 +144,25 @@ function LoginForm() {
                 <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
               </svg>
               {socialLoading === "google" ? "연결 중..." : "구글로 시작하기"}
+              {isWebView && (
+                <span className="absolute right-3 text-[10px] text-amber-500 font-normal">외부브라우저 필요</span>
+              )}
+            </button>
+
+            {/* 위챗 */}
+            <button
+              type="button"
+              onClick={() => handleSocialLogin("wechat")}
+              disabled={!!socialLoading}
+              className="w-full bg-[#07C160] text-white rounded-xl py-3.5 font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60 relative"
+            >
+              {/* 위챗 아이콘 */}
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <path d="M9.5 4C5.36 4 2 6.91 2 10.5c0 1.98 1.02 3.75 2.63 4.97L4 18l2.96-1.48A8.6 8.6 0 009.5 17c.34 0 .67-.02 1-.05A5.5 5.5 0 0110 15.5C10 12.46 12.91 10 16.5 10c.35 0 .69.03 1.03.07C16.88 6.6 13.55 4 9.5 4z" fill="white"/>
+                <path d="M16.5 11.5c-2.76 0-5 1.79-5 4s2.24 4 5 4c.65 0 1.27-.1 1.84-.28L21 20.5l-.64-2.43C21.33 17.16 22 16.1 22 15.5c0-2.21-2.24-4-5.5-4z" fill="white" opacity="0.8"/>
+              </svg>
+              {socialLoading === "wechat" ? "연결 중..." : "위챗으로 시작하기 (微信)"}
+              <span className="absolute right-3 text-[10px] text-green-100 font-normal">준비중</span>
             </button>
           </div>
 

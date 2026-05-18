@@ -1,10 +1,60 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import KakaoProvider from "next-auth/providers/kakao";
-import NaverProvider from "next-auth/providers/naver";
 import GoogleProvider from "next-auth/providers/google";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
+
+// 위챗 커스텀 OAuth 프로바이더
+// 사용하려면 .env에 WECHAT_APP_ID, WECHAT_APP_SECRET 설정 필요
+// (微信开放平台 → 网站应用 → AppID/AppSecret)
+const WechatProvider = {
+  id: "wechat",
+  name: "微信",
+  type: "oauth" as const,
+  authorization: {
+    url: "https://open.weixin.qq.com/connect/qrconnect",
+    params: {
+      appid: process.env.WECHAT_APP_ID,
+      response_type: "code",
+      scope: "snsapi_login",
+    },
+  },
+  token: {
+    async request({ params }: { params: { code: string } }) {
+      const res = await fetch(
+        `https://api.weixin.qq.com/sns/oauth2/access_token?appid=${process.env.WECHAT_APP_ID}&secret=${process.env.WECHAT_APP_SECRET}&code=${params.code}&grant_type=authorization_code`
+      );
+      const data = await res.json();
+      return {
+        tokens: {
+          access_token: data.access_token,
+          openid: data.openid,
+          unionid: data.unionid,
+        },
+      };
+    },
+  },
+  userinfo: {
+    async request({ tokens }: { tokens: { access_token: string; openid: string } }) {
+      const res = await fetch(
+        `https://api.weixin.qq.com/sns/userinfo?access_token=${tokens.access_token}&openid=${tokens.openid}&lang=zh_CN`
+      );
+      return res.json();
+    },
+  },
+  profile(profile: { openid: string; unionid?: string; nickname?: string; headimgurl?: string }) {
+    return {
+      id: profile.unionid || profile.openid,
+      name: profile.nickname || "위챗 사용자",
+      email: `wechat_${profile.openid}@sourcing-kit.app`,
+      image: profile.headimgurl,
+    };
+  },
+  clientId: process.env.WECHAT_APP_ID,
+  clientSecret: process.env.WECHAT_APP_SECRET,
+  checks: ["state"] as const,
+};
 
 export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
@@ -14,14 +64,12 @@ export const authOptions: NextAuthOptions = {
       clientId: process.env.KAKAO_CLIENT_ID!,
       clientSecret: process.env.KAKAO_CLIENT_SECRET!,
     }),
-    NaverProvider({
-      clientId: process.env.NAVER_LOGIN_CLIENT_ID!,
-      clientSecret: process.env.NAVER_LOGIN_CLIENT_SECRET!,
-    }),
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
+    // 위챗: WECHAT_APP_ID 설정 시 활성화
+    ...(process.env.WECHAT_APP_ID ? [WechatProvider] : []),
     CredentialsProvider({
       name: "credentials",
       credentials: {
@@ -43,7 +91,7 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async signIn({ user, account }) {
       // 소셜 로그인: DB에 User/Tenant 자동 생성 또는 조회
-      if ((account?.provider === "kakao" || account?.provider === "naver" || account?.provider === "google") && user.email) {
+      if ((account?.provider === "kakao" || account?.provider === "google" || account?.provider === "wechat") && user.email) {
         let dbUser = await prisma.user.findUnique({ where: { email: user.email } });
         if (!dbUser) {
           const tenant = await prisma.tenant.create({
