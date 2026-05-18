@@ -1,5 +1,6 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import KakaoProvider from "next-auth/providers/kakao";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
@@ -7,6 +8,10 @@ export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
   pages: { signIn: "/login" },
   providers: [
+    KakaoProvider({
+      clientId: process.env.KAKAO_CLIENT_ID!,
+      clientSecret: process.env.KAKAO_CLIENT_SECRET!,
+    }),
     CredentialsProvider({
       name: "credentials",
       credentials: {
@@ -18,7 +23,7 @@ export const authOptions: NextAuthOptions = {
         const user = await prisma.user.findUnique({
           where: { email: credentials.email },
         });
-        if (!user) return null;
+        if (!user || !user.password) return null;
         const valid = await bcrypt.compare(credentials.password, user.password);
         if (!valid) return null;
         return { id: user.id, tenantId: user.tenantId, name: user.name, email: user.email };
@@ -26,9 +31,30 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
+    async signIn({ user, account }) {
+      // 소셜 로그인: DB에 User/Tenant 자동 생성 또는 조회
+      if (account?.provider === "kakao" && user.email) {
+        let dbUser = await prisma.user.findUnique({ where: { email: user.email } });
+        if (!dbUser) {
+          const tenant = await prisma.tenant.create({
+            data: { name: user.name ?? "소싱킷 사용자" },
+          });
+          dbUser = await prisma.user.create({
+            data: {
+              email: user.email,
+              name: user.name ?? "",
+              tenantId: tenant.id,
+            },
+          });
+        }
+        (user as { tenantId?: string }).tenantId = dbUser.tenantId;
+        user.id = dbUser.id;
+      }
+      return true;
+    },
     jwt({ token, user }) {
       if (user) {
-        token.tenantId = (user as { tenantId: string }).tenantId;
+        token.tenantId = (user as { tenantId?: string }).tenantId;
         token.userId = user.id;
       }
       return token;
