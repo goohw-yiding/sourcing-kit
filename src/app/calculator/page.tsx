@@ -1069,9 +1069,9 @@ export default function CalculatorPage() {
 
       {/* 저장 바텀시트 */}
       {showSaveSheet && (
-        <div className="fixed inset-0 z-40 flex flex-col justify-end">
+        <div className="fixed inset-0 z-[200] flex flex-col justify-end">
           <div className="absolute inset-0 bg-black/40" onClick={() => setShowSaveSheet(false)} />
-          <div className="relative bg-white rounded-t-3xl px-4 pt-5 pb-10 space-y-4 shadow-2xl">
+          <div className="relative bg-white rounded-t-3xl px-4 pt-5 pb-20 space-y-4 shadow-2xl">
             <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-2" />
             <h3 className="font-bold text-gray-900 text-base">소싱수첩에 저장</h3>
             <div className="bg-orange-50 rounded-xl px-4 py-3 flex justify-between items-center">

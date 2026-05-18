@@ -11,11 +11,17 @@ const FEATURES = [
   { icon: "🗂️", title: "시장조사", sub: "현장에서 즉시 정리" },
 ];
 
-/** 카카오톡, 라인, 인스타그램 등 인앱브라우저 감지 */
+/** 카카오톡, 라인 등 인앱브라우저 감지 (위챗 제외) */
 function detectWebView(): boolean {
   if (typeof window === "undefined") return false;
   const ua = navigator.userAgent;
-  return /KAKAOTALK|NAVER|Line|Instagram|FB_IAB|FBAN|Twitter|Snapchat|MicroMessenger|WebView/i.test(ua);
+  return /KAKAOTALK|NAVER|Line|Instagram|FB_IAB|FBAN|Twitter|Snapchat|WebView/i.test(ua);
+}
+
+/** 위챗 내부 브라우저 감지 */
+function detectWechat(): boolean {
+  if (typeof window === "undefined") return false;
+  return /MicroMessenger/i.test(navigator.userAgent);
 }
 
 function LoginForm() {

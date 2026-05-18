@@ -29,7 +29,7 @@ export function CbmCalculator({ onApply, onClose, initialCbm }: Props) {
   return (
     <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/40" onClick={onClose}>
       <div
-        className="bg-white rounded-t-3xl w-full max-w-sm pb-safe"
+        className="bg-white rounded-t-3xl w-full max-w-sm pb-20"
         onClick={(e) => e.stopPropagation()}
       >
         {/* 헤더 */}

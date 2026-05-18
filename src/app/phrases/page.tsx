@@ -426,7 +426,7 @@ function NearbyTab({ onShowPhrases }: { onShowPhrases: (catId: string) => void }
               </button>
             </div>
 
-            <div className="px-4 pb-10 pt-3 space-y-4">
+            <div className="px-4 pb-20 pt-3 space-y-4">
               {/* 로딩 */}
               {detailLoading && (
                 <div className="flex items-center justify-center py-8 gap-2 text-gray-400">

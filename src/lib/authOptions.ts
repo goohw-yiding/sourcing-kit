@@ -5,25 +5,30 @@ import GoogleProvider from "next-auth/providers/google";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
-// 위챗 커스텀 OAuth 프로바이더
-// 사용하려면 .env에 WECHAT_APP_ID, WECHAT_APP_SECRET 설정 필요
-// (微信开放平台 → 网站应用 → AppID/AppSecret)
+// 위챗 공중하오(微信公众号) OAuth 프로바이더
+// 공중하오 백엔드: 설정 → 公众号设置 → 功能设置 → 网页授权域名 → sourcing-kit.vercel.app 등록 필요
+// .env에 WECHAT_APP_ID=wx58c0154f3f312525, WECHAT_APP_SECRET=... 설정 필요
 const WechatProvider = {
   id: "wechat",
   name: "微信",
   type: "oauth" as const,
   authorization: {
-    url: "https://open.weixin.qq.com/connect/qrconnect",
+    // 微信公众号 网页授权 URL (开放平台 QR코드 방식이 아님)
+    url: "https://open.weixin.qq.com/connect/oauth2/authorize",
     params: {
       appid: process.env.WECHAT_APP_ID,
       response_type: "code",
-      scope: "snsapi_login",
+      scope: "snsapi_userinfo", // 닉네임·프로필 이미지 포함
     },
   },
   token: {
     async request({ params }: { params: { code: string } }) {
       const res = await fetch(
-        `https://api.weixin.qq.com/sns/oauth2/access_token?appid=${process.env.WECHAT_APP_ID}&secret=${process.env.WECHAT_APP_SECRET}&code=${params.code}&grant_type=authorization_code`
+        `https://api.weixin.qq.com/sns/oauth2/access_token` +
+        `?appid=${process.env.WECHAT_APP_ID}` +
+        `&secret=${process.env.WECHAT_APP_SECRET}` +
+        `&code=${params.code}` +
+        `&grant_type=authorization_code`
       );
       const data = await res.json();
       return {
@@ -38,7 +43,10 @@ const WechatProvider = {
   userinfo: {
     async request({ tokens }: { tokens: { access_token: string; openid: string } }) {
       const res = await fetch(
-        `https://api.weixin.qq.com/sns/userinfo?access_token=${tokens.access_token}&openid=${tokens.openid}&lang=zh_CN`
+        `https://api.weixin.qq.com/sns/userinfo` +
+        `?access_token=${tokens.access_token}` +
+        `&openid=${tokens.openid}` +
+        `&lang=zh_CN`
       );
       return res.json();
     },
@@ -46,8 +54,8 @@ const WechatProvider = {
   profile(profile: { openid: string; unionid?: string; nickname?: string; headimgurl?: string }) {
     return {
       id: profile.unionid || profile.openid,
-      name: profile.nickname || "위챗 사용자",
-      email: `wechat_${profile.openid}@sourcing-kit.app`,
+      name: profile.nickname || "微信用户",
+      email: `wechat_${profile.unionid || profile.openid}@sourcing-kit.app`,
       image: profile.headimgurl,
     };
   },

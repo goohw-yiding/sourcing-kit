@@ -921,8 +921,8 @@ export default function SourcingPage() {
 
           {/* ── 발주하기 모달 ── */}
           {showOrderModal && (
-            <div className="fixed inset-0 z-50 bg-black/60 flex items-end" onClick={() => setShowOrderModal(false)}>
-              <div className="bg-white w-full rounded-t-3xl px-5 pt-5 pb-10 space-y-4 max-h-[92vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="fixed inset-0 z-[200] bg-black/60 flex items-end" onClick={() => setShowOrderModal(false)}>
+              <div className="bg-white w-full rounded-t-3xl px-5 pt-5 pb-20 space-y-4 max-h-[92vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                 {/* 헤더 */}
                 <div className="flex items-center justify-between">
                   <h3 className="font-bold text-lg">📦 발주하기</h3>
@@ -1050,8 +1050,8 @@ export default function SourcingPage() {
 
           {/* ── 선적 처리 모달 ── */}
           {showShipModal && (
-            <div className="fixed inset-0 z-50 bg-black/60 flex items-end" onClick={() => setShowShipModal(false)}>
-              <div className="bg-white w-full rounded-t-3xl px-5 pt-5 pb-10 space-y-4" onClick={e => e.stopPropagation()}>
+            <div className="fixed inset-0 z-[200] bg-black/60 flex items-end" onClick={() => setShowShipModal(false)}>
+              <div className="bg-white w-full rounded-t-3xl px-5 pt-5 pb-20 space-y-4" onClick={e => e.stopPropagation()}>
                 <div className="flex items-center justify-between">
                   <h3 className="font-bold text-lg">🚢 중국내 선적 처리</h3>
                   <button onClick={() => setShowShipModal(false)} className="text-gray-400 p-1"><X className="w-5 h-5" /></button>
@@ -2371,8 +2371,8 @@ export default function SourcingPage() {
 
         {/* ── 저장 완료 다음 단계 안내 ── */}
         {showNextStep && (
-          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setShowNextStep(false)}>
-            <div className="w-full max-w-lg bg-white rounded-t-3xl p-5 pb-10" onClick={e => e.stopPropagation()}>
+          <div className="fixed inset-0 z-[200] flex items-end justify-center bg-black/40" onClick={() => setShowNextStep(false)}>
+            <div className="w-full max-w-lg bg-white rounded-t-3xl p-5 pb-20" onClick={e => e.stopPropagation()}>
               <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-4" />
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-lg">✅</div>
@@ -2429,8 +2429,8 @@ export default function SourcingPage() {
 
         {/* ── 다운로드 모달 ── */}
         {showDownload && (
-          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setShowDownload(false)}>
-            <div className="w-full max-w-lg bg-white rounded-t-3xl p-5 pb-8 space-y-4" onClick={e => e.stopPropagation()}>
+          <div className="fixed inset-0 z-[200] flex items-end justify-center bg-black/40" onClick={() => setShowDownload(false)}>
+            <div className="w-full max-w-lg bg-white rounded-t-3xl p-5 pb-20 space-y-4" onClick={e => e.stopPropagation()}>
               <div className="flex items-center justify-between">
                 <h3 className="text-base font-bold text-gray-900">📥 다운로드</h3>
                 <button onClick={() => setShowDownload(false)} className="text-gray-400 text-xl">✕</button>
