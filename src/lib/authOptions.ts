@@ -1,6 +1,7 @@
 import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import KakaoProvider from "next-auth/providers/kakao";
+import NaverProvider from "next-auth/providers/naver";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
@@ -11,6 +12,10 @@ export const authOptions: NextAuthOptions = {
     KakaoProvider({
       clientId: process.env.KAKAO_CLIENT_ID!,
       clientSecret: process.env.KAKAO_CLIENT_SECRET!,
+    }),
+    NaverProvider({
+      clientId: process.env.NAVER_LOGIN_CLIENT_ID!,
+      clientSecret: process.env.NAVER_LOGIN_CLIENT_SECRET!,
     }),
     CredentialsProvider({
       name: "credentials",
@@ -33,7 +38,7 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async signIn({ user, account }) {
       // 소셜 로그인: DB에 User/Tenant 자동 생성 또는 조회
-      if (account?.provider === "kakao" && user.email) {
+      if ((account?.provider === "kakao" || account?.provider === "naver") && user.email) {
         let dbUser = await prisma.user.findUnique({ where: { email: user.email } });
         if (!dbUser) {
           const tenant = await prisma.tenant.create({

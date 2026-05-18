@@ -58,6 +58,17 @@ function LoginForm() {
             </svg>
             {socialLoading === "kakao" ? "연결 중..." : "카카오로 시작하기"}
           </button>
+          <button
+            type="button"
+            onClick={() => handleSocialLogin("naver")}
+            disabled={!!socialLoading}
+            className="w-full bg-[#03C75A] text-white rounded-xl py-3.5 font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M16.273 12.845L7.376 0H0v24h7.727V11.155L16.624 24H24V0h-7.727z" fill="white"/>
+            </svg>
+            {socialLoading === "naver" ? "연결 중..." : "네이버로 시작하기"}
+          </button>
         </div>
 
         <div className="flex items-center gap-3 mb-6">
