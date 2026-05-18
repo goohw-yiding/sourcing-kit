@@ -8,6 +8,7 @@ import Link from "next/link";
 import { ChinesePhrase } from "@/components/ChinesePhrase";
 import { useRouter, useSearchParams } from "next/navigation";
 import { calcLandedCost, formatKrw } from "@/lib/calc";
+import { SkeletonCard } from "@/components/SkeletonCard";
 import { detectMarketLocation } from "@/lib/location";
 
 interface NaverShopItem {
@@ -2509,7 +2510,9 @@ export default function SourcingPage() {
         )}
 
         {loading ? (
-          <div className="text-center py-12 text-gray-400 text-sm">불러오는 중...</div>
+          <div className="grid grid-cols-2 gap-2">
+            {Array.from({ length: 6 }).map((_, i) => <SkeletonCard key={i} />)}
+          </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-16 text-gray-400">
             <div className="text-4xl mb-3">📦</div>

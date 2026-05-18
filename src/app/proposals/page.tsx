@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { ArrowLeft, Plus, Trash2, Share2, Check, ChevronRight, Eye } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 
 interface Buyer { id: string; name: string; }
@@ -210,7 +211,7 @@ function ProposalsPage() {
                   className={`w-full bg-white rounded-2xl p-4 shadow-sm border text-left flex items-center gap-3 active:scale-95 transition-transform ${sel ? "border-green-400 bg-green-50" : "border-gray-100"}`}
                 >
                   {p.imageUrl
-                    ? <img src={p.imageUrl} alt="" className="w-14 h-14 rounded-xl object-cover shrink-0" />
+                    ? <Image src={p.imageUrl} alt="" width={56} height={56} className="rounded-xl object-cover shrink-0" />
                     : <div className="w-14 h-14 rounded-xl bg-gray-100 shrink-0 flex items-center justify-center text-2xl">📦</div>
                   }
                   <div className="flex-1 min-w-0">
@@ -265,7 +266,7 @@ function ProposalsPage() {
               <div key={pid} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 space-y-3">
                 <div className="flex items-center gap-3">
                   {p.imageUrl
-                    ? <img src={p.imageUrl} alt="" className="w-12 h-12 rounded-lg object-cover" />
+                    ? <Image src={p.imageUrl} alt="" width={48} height={48} className="rounded-lg object-cover" />
                     : <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center text-xl">📦</div>
                   }
                   <div>

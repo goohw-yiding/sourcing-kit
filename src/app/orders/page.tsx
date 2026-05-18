@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { SkeletonRow } from "@/components/SkeletonCard";
 
 const STEPS = [
   { key: "ordered", label: "발주완료", color: "bg-gray-500" },
@@ -28,6 +29,7 @@ const BLANK: Partial<Order> = { status: "ordered" };
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [selected, setSelected] = useState<Order | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState<Partial<Order>>(BLANK);
@@ -35,9 +37,13 @@ export default function OrdersPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
+    setError(false);
     try {
       const res = await fetch("/api/orders");
+      if (!res.ok) throw new Error();
       setOrders(await res.json());
+    } catch {
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -188,7 +194,21 @@ export default function OrdersPage() {
 
       <div className="px-4 py-4 space-y-2">
         {loading ? (
-          <div className="text-center py-12 text-gray-400 text-sm">불러오는 중...</div>
+          <div className="space-y-2">
+            {Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} />)}
+          </div>
+        ) : error ? (
+          <div className="text-center py-16 text-gray-400">
+            <div className="text-4xl mb-3">⚠️</div>
+            <div className="font-medium text-gray-600">데이터를 불러오지 못했습니다.</div>
+            <div className="text-sm mt-1 mb-4">다시 시도해 주세요.</div>
+            <button
+              onClick={load}
+              className="text-white text-sm px-5 py-2.5 rounded-xl bg-[var(--primary)]"
+            >
+              다시 시도
+            </button>
+          </div>
         ) : orders.length === 0 ? (
           <div className="text-center py-16 text-gray-400">
             <div className="text-4xl mb-3">📋</div>

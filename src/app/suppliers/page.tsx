@@ -5,6 +5,7 @@ import { ArrowLeft, Plus, Search, Phone, MessageCircle, MapPin, ExternalLink, Tr
 import Link from "next/link";
 import { QRScanner } from "@/components/QRScanner";
 import { detectMarketLocation } from "@/lib/location";
+import { SkeletonRow } from "@/components/SkeletonCard";
 
 interface Supplier {
   id: string;
@@ -24,6 +25,7 @@ const BLANK: Partial<Supplier> = {};
 export default function SuppliersPage() {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [search, setSearch] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [selected, setSelected] = useState<Supplier | null>(null);
@@ -48,9 +50,13 @@ export default function SuppliersPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
+    setError(false);
     try {
       const res = await fetch("/api/suppliers");
+      if (!res.ok) throw new Error();
       setSuppliers(await res.json());
+    } catch {
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -295,7 +301,21 @@ export default function SuppliersPage() {
         </div>
 
         {loading ? (
-          <div className="text-center py-12 text-gray-400 text-sm">불러오는 중...</div>
+          <div className="space-y-2">
+            {Array.from({ length: 6 }).map((_, i) => <SkeletonRow key={i} />)}
+          </div>
+        ) : error ? (
+          <div className="text-center py-16 text-gray-400">
+            <div className="text-4xl mb-3">⚠️</div>
+            <div className="font-medium text-gray-600">데이터를 불러오지 못했습니다.</div>
+            <div className="text-sm mt-1 mb-4">다시 시도해 주세요.</div>
+            <button
+              onClick={load}
+              className="text-white text-sm px-5 py-2.5 rounded-xl bg-[var(--primary)]"
+            >
+              다시 시도
+            </button>
+          </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-16 text-gray-400">
             <div className="text-4xl mb-3">🏪</div>

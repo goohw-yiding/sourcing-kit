@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import Image from "next/image";
 
 interface Product {
   nameKr: string;
@@ -84,7 +85,9 @@ export default function ProposalSharePage() {
         {proposal.items.map((item) => (
           <div key={item.id} className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
             {item.product.imageUrl && (
-              <img src={item.product.imageUrl} alt={item.product.nameKr} className="w-full h-48 object-cover" />
+              <div className="relative w-full h-48">
+                <Image src={item.product.imageUrl} alt={item.product.nameKr} fill className="object-cover" />
+              </div>
             )}
             <div className="p-4">
               <div className="font-bold text-gray-900 text-base">{item.product.nameKr}</div>
