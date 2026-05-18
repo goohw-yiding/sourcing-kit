@@ -1,10 +1,12 @@
 "use client";
 
-import { Camera } from "lucide-react";
+import { Camera, MapPin, Navigation, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { getStoredUserName } from "@/lib/themes";
 import { useTranslation } from "@/lib/i18n";
+import { detectMarketLocation } from "@/lib/location";
+import { MARKET_REGIONS, type MarketRegion } from "@/lib/markets";
 import type { ExchangeRates } from "@/app/api/exchange-rate/route";
 
 interface Stats { researching: number; inProgress: number; arrived: number; }
@@ -20,11 +22,36 @@ interface CurrencyItem {
   rateType?: string;   // "전신환매도" | "매매기준"
 }
 
+// ── 위치 → 시장 지역 매핑 ────────────────────────────────────
+function matchRegionId(loc: string): string | null {
+  if (loc.includes("이우") || loc.includes("义乌")) return "yiwu";
+  if (loc.includes("광저우") || loc.includes("广州")) return "guangzhou";
+  if (loc.includes("도쿄") || loc.includes("오사카") || loc.includes("Tokyo") || loc.includes("Osaka") || loc.includes("大阪") || loc.includes("東京")) return "japan";
+  if (loc.includes("서울") || loc.includes("경기") || loc.includes("인천") || loc.includes("부산") || loc.includes("고양") || loc.includes("Seoul")) return "korea";
+  if (loc.includes("라스베가스") || loc.includes("뉴욕") || loc.includes("Las Vegas") || loc.includes("New York") || loc.includes("Chicago")) return "usa";
+  if (loc.includes("상하이") || loc.includes("上海")) return "guangzhou"; // 상하이는 광저우 탭으로 fallback
+  if (loc.includes("선전") || loc.includes("深圳")) return "guangzhou";
+  return null;
+}
+
+const CITY_CHIPS = [
+  { id: "yiwu",      flag: "🇨🇳", label: "이우" },
+  { id: "guangzhou", flag: "🇨🇳", label: "광저우" },
+  { id: "japan",     flag: "🇯🇵", label: "도쿄·오사카" },
+  { id: "korea",     flag: "🇰🇷", label: "국내" },
+  { id: "usa",       flag: "🇺🇸", label: "미국" },
+];
+
 export default function HomePage() {
   const { t } = useTranslation();
   const [rates, setRates] = useState<ExchangeRates | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
   const [userName, setUserName] = useState("");
+
+  // 현장 위치
+  const [fieldRegion, setFieldRegion] = useState<MarketRegion | null>(null);
+  const [locationLabel, setLocationLabel] = useState<string>("");
+  const [gpsLoading, setGpsLoading] = useState(false);
 
   useEffect(() => {
     setUserName(getStoredUserName());
@@ -44,7 +71,47 @@ export default function HomePage() {
         setStats(s);
       })
       .catch(() => {});
+
+    // 저장된 현장 위치 복원
+    const savedId = localStorage.getItem("field_region_id");
+    const savedLabel = localStorage.getItem("field_location_label");
+    if (savedId) {
+      const region = MARKET_REGIONS.find(r => r.id === savedId) || null;
+      setFieldRegion(region);
+      setLocationLabel(savedLabel || "");
+    }
   }, []);
+
+  const selectRegion = (id: string, label?: string) => {
+    const region = MARKET_REGIONS.find(r => r.id === id) || null;
+    setFieldRegion(region);
+    const lbl = label || CITY_CHIPS.find(c => c.id === id)?.label || id;
+    setLocationLabel(lbl);
+    localStorage.setItem("field_region_id", id);
+    localStorage.setItem("field_location_label", lbl);
+  };
+
+  const detectGps = async () => {
+    setGpsLoading(true);
+    try {
+      const loc = await detectMarketLocation();
+      setLocationLabel(loc);
+      const id = matchRegionId(loc);
+      if (id) {
+        const region = MARKET_REGIONS.find(r => r.id === id) || null;
+        setFieldRegion(region);
+        localStorage.setItem("field_region_id", id);
+      } else {
+        setFieldRegion(null);
+        localStorage.removeItem("field_region_id");
+      }
+      localStorage.setItem("field_location_label", loc);
+    } catch {
+      alert("위치 감지에 실패했습니다. 아래에서 직접 선택해주세요.");
+    } finally {
+      setGpsLoading(false);
+    }
+  };
 
   // 통화 목록 (CNY·USD·JPY·VND)
   // CNY는 전신환매도율(ttSell) — 실제 송금 시 적용 환율
@@ -147,21 +214,97 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* 현장 빠른 액션 */}
-      <div className="px-4 py-5">
-        <p className="text-xs font-semibold text-gray-400 mb-3 uppercase tracking-wide">{t("home.quick")}</p>
+      {/* 빠른 소싱 시작 */}
+      <div className="px-4 pt-5 pb-3">
         <Link href="/sourcing?new=1">
-          <div className="rounded-2xl px-6 py-6 flex items-center gap-5 active:scale-[0.98] transition-transform shadow-sm bg-[var(--primary)]">
-            <div className="w-14 h-14 rounded-2xl bg-white/15 flex items-center justify-center shrink-0">
-              <Camera className="w-7 h-7 text-white" />
+          <div className="rounded-2xl px-5 py-4 flex items-center gap-4 active:scale-[0.98] transition-transform shadow-sm bg-[var(--primary)]">
+            <div className="w-11 h-11 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+              <Camera className="w-6 h-6 text-white" />
             </div>
             <div className="flex-1">
-              <div className="font-extrabold text-lg text-white leading-tight">소싱 시작</div>
-              <div className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.65)" }}>사진 찍으면 AI가 원가까지 분석</div>
+              <div className="font-extrabold text-base text-white leading-tight">소싱 시작</div>
+              <div className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.65)" }}>사진 찍으면 AI가 원가까지 분석</div>
             </div>
-            <span className="text-white/40 text-2xl leading-none">›</span>
+            <span className="text-white/40 text-xl leading-none">›</span>
           </div>
         </Link>
+      </div>
+
+      {/* 현장 위치 섹션 */}
+      <div className="px-4 pb-4">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">📍 현장</p>
+          {fieldRegion && (
+            <button onClick={() => { setFieldRegion(null); setLocationLabel(""); localStorage.removeItem("field_region_id"); localStorage.removeItem("field_location_label"); }}
+              className="text-[10px] text-gray-400 flex items-center gap-0.5">
+              <RefreshCw className="w-2.5 h-2.5" /> 변경
+            </button>
+          )}
+        </div>
+
+        {/* 위치 미선택 → 선택 UI */}
+        {!fieldRegion ? (
+          <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 space-y-3">
+            <div className="flex items-center gap-2 text-gray-500">
+              <MapPin className="w-4 h-4 text-gray-400" />
+              <p className="text-sm">지금 어디 계세요?</p>
+            </div>
+            {/* 도시 칩 */}
+            <div className="flex flex-wrap gap-2">
+              {CITY_CHIPS.map(c => (
+                <button key={c.id} onClick={() => selectRegion(c.id)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 bg-gray-50 text-sm text-gray-700 active:bg-gray-100">
+                  <span>{c.flag}</span><span>{c.label}</span>
+                </button>
+              ))}
+            </div>
+            {/* GPS 버튼 */}
+            <button onClick={detectGps} disabled={gpsLoading}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-dashed border-gray-300 text-sm text-gray-500 disabled:opacity-50">
+              {gpsLoading
+                ? <><div className="w-3.5 h-3.5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" /> GPS 감지 중...</>
+                : <><Navigation className="w-3.5 h-3.5" /> GPS로 자동 감지</>}
+            </button>
+          </div>
+        ) : (
+          /* 위치 선택됨 → 시장 정보 카드 */
+          <div className={`rounded-2xl overflow-hidden shadow-sm border border-gray-100`}>
+            {/* 헤더 */}
+            <div className={`${fieldRegion.color} px-4 py-3`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-base">{fieldRegion.flag}</span>
+                    <span className={`text-sm font-bold ${fieldRegion.textColor}`}>{fieldRegion.city}</span>
+                  </div>
+                  {locationLabel && locationLabel !== fieldRegion.city && (
+                    <p className="text-[10px] text-gray-400 mt-0.5 flex items-center gap-0.5">
+                      <MapPin className="w-2.5 h-2.5" />{locationLabel}
+                    </p>
+                  )}
+                </div>
+                <span className={`text-xs font-bold ${fieldRegion.textColor} bg-white/60 px-2 py-0.5 rounded-full`}>현장</span>
+              </div>
+              <p className="text-xs text-gray-500 mt-1">{fieldRegion.subtitle}</p>
+            </div>
+            {/* 주요 시장 spots (상위 3개) */}
+            <div className="bg-white divide-y divide-gray-50">
+              {fieldRegion.spots.slice(0, 3).map((spot, i) => (
+                <div key={i} className="px-4 py-3">
+                  <p className="text-xs font-bold text-gray-800">{spot.nameKr}</p>
+                  <p className="text-[11px] text-gray-500 mt-0.5 line-clamp-2">{spot.desc}</p>
+                  {spot.tip && (
+                    <p className="text-[10px] text-blue-500 mt-0.5">💡 {spot.tip}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+            {/* 더보기 링크 */}
+            <Link href="/more" className={`flex items-center justify-center gap-1 py-3 ${fieldRegion.color} ${fieldRegion.textColor} text-xs font-bold border-t border-gray-100`}>
+              시장 가이드 전체보기 →
+            </Link>
+          </div>
+        )}
       </div>
 
       {/* 메뉴 바로가기 */}
