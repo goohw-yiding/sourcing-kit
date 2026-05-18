@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma, DEFAULT_TENANT_ID, ensureDefaultTenant } from "@/lib/db";
+import { prisma } from "@/lib/db";
 import * as XLSX from "xlsx";
+import { getAuthTenantId } from "@/lib/getAuth";
 
 const STATUS_LABELS: Record<string, string> = {
   sourcing: "시장조사", proposed: "제안완료", ordered: "발주완료",
@@ -8,7 +9,9 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 export async function GET(req: NextRequest) {
-  await ensureDefaultTenant();
+  const auth = await getAuthTenantId();
+  if (auth instanceof NextResponse) return auth;
+  const { tenantId } = auth;
   const { searchParams } = req.nextUrl;
   const dateFrom = searchParams.get("from") || "";
   const dateTo   = searchParams.get("to") || "";
@@ -17,7 +20,7 @@ export async function GET(req: NextRequest) {
 
   const products = await prisma.product.findMany({
     where: {
-      tenantId: DEFAULT_TENANT_ID,
+      tenantId,
       ...(dateFrom ? { createdAt: { gte: new Date(dateFrom) } } : {}),
       ...(dateTo   ? { createdAt: { lte: new Date(dateTo + "T23:59:59") } } : {}),
       ...(status   ? { status } : {}),

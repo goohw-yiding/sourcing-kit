@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma, DEFAULT_TENANT_ID } from "@/lib/db";
+import { prisma } from "@/lib/db";
 import { calcLandedCost } from "@/lib/calc";
+import { getAuthTenantId } from "@/lib/getAuth";
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const auth = await getAuthTenantId();
+    if (auth instanceof NextResponse) return auth;
+    const { tenantId } = auth;
     const { id } = await params;
     const body = await req.json();
 
@@ -24,7 +28,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     });
 
     const product = await prisma.product.update({
-      where: { id, tenantId: DEFAULT_TENANT_ID },
+      where: { id, tenantId },
       data: {
         nameKr: body.nameKr,
         nameCn: body.nameCn || null,
@@ -62,7 +66,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await getAuthTenantId();
+  if (auth instanceof NextResponse) return auth;
+  const { tenantId } = auth;
   const { id } = await params;
-  await prisma.product.delete({ where: { id, tenantId: DEFAULT_TENANT_ID } });
+  await prisma.product.delete({ where: { id, tenantId } });
   return NextResponse.json({ ok: true });
 }

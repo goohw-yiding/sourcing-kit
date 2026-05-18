@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma, DEFAULT_TENANT_ID, ensureDefaultTenant } from "@/lib/db";
+import { prisma } from "@/lib/db";
+import { getAuthTenantId } from "@/lib/getAuth";
 
 // GET /api/orders?productId=xxx  — 발주 이력 조회
 export async function GET(req: NextRequest) {
-  await ensureDefaultTenant();
+  const auth = await getAuthTenantId();
+  if (auth instanceof NextResponse) return auth;
+  const { tenantId } = auth;
   const productId = req.nextUrl.searchParams.get("productId");
   const orders = await prisma.order.findMany({
     where: {
-      tenantId: DEFAULT_TENANT_ID,
+      tenantId,
       ...(productId ? { productId } : {}),
     },
     include: {
@@ -21,7 +24,9 @@ export async function GET(req: NextRequest) {
 // POST /api/orders  — 발주 생성
 export async function POST(req: NextRequest) {
   try {
-    await ensureDefaultTenant();
+    const auth = await getAuthTenantId();
+    if (auth instanceof NextResponse) return auth;
+    const { tenantId } = auth;
     const body = await req.json();
     const n = (v: unknown) => {
       const val = parseFloat(String(v ?? ""));
@@ -30,7 +35,7 @@ export async function POST(req: NextRequest) {
 
     const order = await prisma.order.create({
       data: {
-        tenantId: DEFAULT_TENANT_ID,
+        tenantId,
         productId: body.productId || null,
         buyerId: body.buyerId || null,
         status: body.status || "ordered",

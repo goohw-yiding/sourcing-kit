@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma, DEFAULT_TENANT_ID, ensureDefaultTenant } from "@/lib/db";
+import { prisma } from "@/lib/db";
+import { getAuthTenantId } from "@/lib/getAuth";
 
 export async function GET() {
-  await ensureDefaultTenant();
+  const auth = await getAuthTenantId();
+  if (auth instanceof NextResponse) return auth;
+  const { tenantId } = auth;
   const proposals = await prisma.proposal.findMany({
-    where: { tenantId: DEFAULT_TENANT_ID },
+    where: { tenantId },
     include: { buyer: true, items: { include: { product: true } } },
     orderBy: { createdAt: "desc" },
   });
@@ -12,12 +15,14 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  await ensureDefaultTenant();
+  const auth = await getAuthTenantId();
+  if (auth instanceof NextResponse) return auth;
+  const { tenantId } = auth;
   const { buyerId, title, items } = await req.json();
 
   const proposal = await prisma.proposal.create({
     data: {
-      tenantId: DEFAULT_TENANT_ID,
+      tenantId,
       buyerId,
       title,
       items: {

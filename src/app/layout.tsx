@@ -2,6 +2,7 @@
 import "./globals.css";
 import { BottomNav } from "@/components/BottomNav";
 import { AppProviders } from "@/components/AppProviders";
+import { SessionProvider } from "@/components/SessionProvider";
 
 export const metadata: Metadata = {
   title: "소싱킷 | 무역 소싱 관리",
@@ -35,10 +36,12 @@ export default function RootLayout({
       </head>
       <body className="h-full antialiased">
         <div className="max-w-md mx-auto min-h-full relative">
-          <AppProviders>
-            {children}
-            <BottomNav />
-          </AppProviders>
+          <SessionProvider>
+            <AppProviders>
+              {children}
+              <BottomNav />
+            </AppProviders>
+          </SessionProvider>
         </div>
       </body>
     </html>

@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { Store, ClipboardList, Search, Calculator, ChevronRight, Palette, User, Check, Pencil, Globe, Plus, Share2, Eye, ChevronDown, ChevronUp, MapPin, Calendar } from "lucide-react";
+import { Store, ClipboardList, Search, Calculator, ChevronRight, Palette, User, Check, Pencil, Globe, Plus, Share2, Eye, ChevronDown, ChevronUp, MapPin, Calendar, LogOut } from "lucide-react";
 import { useState, useEffect } from "react";
+import { signOut } from "next-auth/react";
 import { THEMES, ThemeId, applyTheme, getStoredTheme, getStoredUserName, setStoredUserName } from "@/lib/themes";
 import { LANGS, LangId, useTranslation } from "@/lib/i18n";
 import { MARKET_REGIONS, TRADE_FAIRS, MONTH_NAMES } from "@/lib/markets";
@@ -408,6 +409,23 @@ export default function MorePage() {
               );
             })}
           </div>
+        </div>
+
+        {/* ── 로그아웃 ── */}
+        <div>
+          <button
+            onClick={() => signOut({ callbackUrl: "/login" })}
+            className="w-full flex items-center gap-3 px-4 py-4 bg-white rounded-2xl shadow-sm border border-gray-100 text-left active:bg-gray-50 transition-colors"
+          >
+            <div className="w-11 h-11 rounded-2xl bg-red-100 text-red-500 flex items-center justify-center shrink-0">
+              <LogOut className="w-5 h-5" />
+            </div>
+            <div className="flex-1">
+              <div className="font-semibold text-gray-900 text-sm">로그아웃</div>
+              <div className="text-xs text-gray-400 mt-0.5">현재 계정에서 로그아웃합니다</div>
+            </div>
+            <ChevronRight className="w-4 h-4 text-gray-300" />
+          </button>
         </div>
 
         {/* ── 테마 선택 ── */}

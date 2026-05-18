@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma, DEFAULT_TENANT_ID, ensureDefaultTenant } from "@/lib/db";
+import { prisma } from "@/lib/db";
 import { calcLandedCost } from "@/lib/calc";
+import { getAuthTenantId } from "@/lib/getAuth";
 
 export async function GET() {
-  await ensureDefaultTenant();
+  const auth = await getAuthTenantId();
+  if (auth instanceof NextResponse) return auth;
+  const { tenantId } = auth;
   const products = await prisma.product.findMany({
-    where: { tenantId: DEFAULT_TENANT_ID },
+    where: { tenantId },
     include: { supplier: { select: { name: true, marketArea: true } } },
     orderBy: { createdAt: "desc" },
   });
@@ -14,7 +17,9 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    await ensureDefaultTenant();
+    const auth = await getAuthTenantId();
+    if (auth instanceof NextResponse) return auth;
+    const { tenantId } = auth;
     const body = await req.json();
 
     // 숫자 파싱 (form이 string으로 전송할 수 있음)
@@ -25,13 +30,13 @@ export async function POST(req: NextRequest) {
     if (!supplierId && body.supplierName?.trim()) {
       const name = body.supplierName.trim();
       const existing = await prisma.supplier.findFirst({
-        where: { tenantId: DEFAULT_TENANT_ID, name },
+        where: { tenantId, name },
       });
       if (existing) {
         supplierId = existing.id;
       } else {
         const created = await prisma.supplier.create({
-          data: { tenantId: DEFAULT_TENANT_ID, name },
+          data: { tenantId, name },
         });
         supplierId = created.id;
       }
@@ -53,7 +58,7 @@ export async function POST(req: NextRequest) {
 
     const product = await prisma.product.create({
       data: {
-        tenantId: DEFAULT_TENANT_ID,
+        tenantId,
         nameKr: body.nameKr,
         nameCn: body.nameCn || null,
         imageUrl: body.imageUrl || null,

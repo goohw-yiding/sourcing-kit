@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma, DEFAULT_TENANT_ID } from "@/lib/db";
+import { prisma } from "@/lib/db";
+import { getAuthTenantId } from "@/lib/getAuth";
 
 // PUT /api/orders/[id]  — 발주 상태/날짜 업데이트
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const auth = await getAuthTenantId();
+    if (auth instanceof NextResponse) return auth;
+    const { tenantId } = auth;
     const { id } = await params;
     const body = await req.json();
     const n = (v: unknown) => {
@@ -23,7 +27,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (body.expectedArrival !== undefined) data.expectedArrival = body.expectedArrival ? new Date(body.expectedArrival) : null;
 
     const order = await prisma.order.update({
-      where: { id, tenantId: DEFAULT_TENANT_ID },
+      where: { id, tenantId },
       data,
       include: {
         product: { select: { nameKr: true, costCny: true, exchangeRate: true } },
@@ -39,7 +43,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
 // DELETE /api/orders/[id]
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await getAuthTenantId();
+  if (auth instanceof NextResponse) return auth;
+  const { tenantId } = auth;
   const { id } = await params;
-  await prisma.order.delete({ where: { id, tenantId: DEFAULT_TENANT_ID } });
+  await prisma.order.delete({ where: { id, tenantId } });
   return NextResponse.json({ ok: true });
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { getAuthTenantId } from "@/lib/getAuth";
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -12,6 +13,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await getAuthTenantId();
+  if (auth instanceof NextResponse) return auth;
   const { id } = await params;
   await prisma.proposalItem.deleteMany({ where: { proposalId: id } });
   await prisma.proposal.delete({ where: { id } });

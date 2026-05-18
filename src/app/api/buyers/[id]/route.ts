@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma, DEFAULT_TENANT_ID } from "@/lib/db";
+import { prisma } from "@/lib/db";
+import { getAuthTenantId } from "@/lib/getAuth";
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await getAuthTenantId();
+  if (auth instanceof NextResponse) return auth;
+  const { tenantId } = auth;
   const { id } = await params;
   const body = await req.json();
   const buyer = await prisma.buyer.update({
-    where: { id, tenantId: DEFAULT_TENANT_ID },
+    where: { id, tenantId },
     data: {
       name: body.name,
       contact: body.contact || null,
@@ -20,7 +24,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const auth = await getAuthTenantId();
+  if (auth instanceof NextResponse) return auth;
+  const { tenantId } = auth;
   const { id } = await params;
-  await prisma.buyer.delete({ where: { id, tenantId: DEFAULT_TENANT_ID } });
+  await prisma.buyer.delete({ where: { id, tenantId } });
   return NextResponse.json({ ok: true });
 }

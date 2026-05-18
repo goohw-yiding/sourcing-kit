@@ -1,21 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma, DEFAULT_TENANT_ID, ensureDefaultTenant } from "@/lib/db";
+import { prisma } from "@/lib/db";
+import { getAuthTenantId } from "@/lib/getAuth";
 
 export async function GET() {
-  await ensureDefaultTenant();
+  const auth = await getAuthTenantId();
+  if (auth instanceof NextResponse) return auth;
+  const { tenantId } = auth;
   const suppliers = await prisma.supplier.findMany({
-    where: { tenantId: DEFAULT_TENANT_ID },
+    where: { tenantId },
     orderBy: { createdAt: "desc" },
   });
   return NextResponse.json(suppliers);
 }
 
 export async function POST(req: NextRequest) {
-  await ensureDefaultTenant();
+  const auth = await getAuthTenantId();
+  if (auth instanceof NextResponse) return auth;
+  const { tenantId } = auth;
   const body = await req.json();
   const supplier = await prisma.supplier.create({
     data: {
-      tenantId: DEFAULT_TENANT_ID,
+      tenantId,
       name: body.name,
       contact: body.contact || null,
       phone: body.phone || null,
