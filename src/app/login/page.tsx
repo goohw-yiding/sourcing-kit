@@ -8,7 +8,7 @@ const FEATURES = [
   { icon: "📸", title: "사진 찍고", sub: "원가계산 한방에" },
   { icon: "💱", title: "실시간 환율", sub: "자동 적용" },
   { icon: "📋", title: "바이어 제안서", sub: "간편 공유" },
-  { icon: "🏭", title: "공급업체", sub: "이력 관리" },
+  { icon: "🗂️", title: "시장조사", sub: "현장에서 즉시 정리" },
 ];
 
 function LoginForm() {
