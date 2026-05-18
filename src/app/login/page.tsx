@@ -99,18 +99,21 @@ function LoginForm() {
 
           {/* 구글 인앱브라우저 안내 */}
           {showWebViewHint && (
-            <div className="mb-4 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3.5 text-sm">
-              <div className="font-bold text-amber-700 mb-1">⚠️ 구글 로그인 안내</div>
-              <div className="text-amber-600 leading-relaxed">
-                카카오톡/앱 내 브라우저에서는 구글 로그인이 지원되지 않습니다.
-                <br />
-                <strong>우측 하단 … 버튼 → 기본 브라우저로 열기</strong>를 선택해 주세요.
+            <div className="mb-4 bg-amber-50 border-2 border-amber-300 rounded-2xl px-4 py-4 text-sm">
+              <div className="font-black text-amber-700 text-base mb-2">⚠️ 구글 로그인 사용 방법</div>
+              <div className="text-amber-700 leading-relaxed space-y-1">
+                <p>카카오톡 내부 브라우저에서는<br /><strong>구글 로그인이 차단</strong>됩니다.</p>
+                <p className="bg-amber-100 rounded-xl px-3 py-2 font-bold text-amber-800">
+                  📱 우측 하단 <strong>···</strong> 버튼<br />
+                  → <strong>기본 브라우저로 열기</strong> 선택
+                </p>
+                <p className="text-xs text-amber-500">또는 카카오 로그인을 이용해 주세요.</p>
               </div>
               <button
                 onClick={() => setShowWebViewHint(false)}
-                className="mt-2 text-xs text-amber-500 underline"
+                className="mt-3 w-full text-sm font-bold text-amber-600 bg-amber-100 rounded-xl py-2"
               >
-                닫기
+                확인
               </button>
             </div>
           )}
@@ -156,10 +159,10 @@ function LoginForm() {
               disabled={!!socialLoading}
               className="w-full bg-[#07C160] text-white rounded-xl py-3.5 font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60 relative"
             >
-              {/* 위챗 아이콘 */}
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-                <path d="M9.5 4C5.36 4 2 6.91 2 10.5c0 1.98 1.02 3.75 2.63 4.97L4 18l2.96-1.48A8.6 8.6 0 009.5 17c.34 0 .67-.02 1-.05A5.5 5.5 0 0110 15.5C10 12.46 12.91 10 16.5 10c.35 0 .69.03 1.03.07C16.88 6.6 13.55 4 9.5 4z" fill="white"/>
-                <path d="M16.5 11.5c-2.76 0-5 1.79-5 4s2.24 4 5 4c.65 0 1.27-.1 1.84-.28L21 20.5l-.64-2.43C21.33 17.16 22 16.1 22 15.5c0-2.21-2.24-4-5.5-4z" fill="white" opacity="0.8"/>
+              {/* 위챗 공식 로고 SVG */}
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+                <path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.21 1.17 4.2 3.002 5.55a.59.59 0 0 1 .213.664l-.39 1.48c-.02.07-.049.14-.049.213 0 .163.13.295.291.295a.33.33 0 0 0 .167-.054l1.903-1.113a.86.86 0 0 1 .717-.099 10.16 10.16 0 0 0 2.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 3.882-1.98 5.853-1.838C16.579 5.053 13.01 2.188 8.691 2.188zM5.785 5.99a1.17 1.17 0 1 1 0 2.341 1.17 1.17 0 0 1 0-2.34zm5.813 0a1.17 1.17 0 1 1 0 2.341 1.17 1.17 0 0 1 0-2.34z"/>
+                <path d="M23.993 15.957c0-3.326-3.31-6.023-7.393-6.023-4.083 0-7.393 2.697-7.393 6.023 0 3.325 3.31 6.022 7.393 6.022.836 0 1.635-.118 2.385-.332a.72.72 0 0 1 .598.082l1.583.926a.27.27 0 0 0 .14.046c.133 0 .241-.11.241-.247 0-.06-.024-.12-.039-.178l-.327-1.232a.582.582 0 0 1-.023-.157.49.49 0 0 1 .201-.397c1.529-1.085 2.634-2.719 2.634-4.532zm-10.045-.97a.983.983 0 1 1 0-1.965.983.983 0 0 1 0 1.966zm5.505 0a.983.983 0 1 1 0-1.965.983.983 0 0 1 0 1.966z"/>
               </svg>
               {socialLoading === "wechat" ? "연결 중..." : "위챗으로 시작하기 (微信)"}
               <span className="absolute right-3 text-[10px] text-green-100 font-normal">준비중</span>
