@@ -12,11 +12,46 @@ model Tenant {
   name      String
   createdAt DateTime @default(now())
 
-  users     User[]
-  suppliers Supplier[]
-  products  Product[]
-  buyers    Buyer[]
-  orders    Order[]
+  users        User[]
+  suppliers    Supplier[]
+  products     Product[]
+  buyers       Buyer[]
+  orders       Order[]
+  subscription Subscription?
+  payments     Payment[]
+}
+
+model Subscription {
+  id              String    @id @default(cuid())
+  tenantId        String    @unique
+  plan            String    @default("free")   // "free" | "pro"
+  status          String    @default("active") // "active" | "cancelled" | "past_due"
+  billingKey      String?   // 토스페이먼츠 빌링키
+  customerKey     String?   // 토스페이먼츠 고객키
+  nextBillingAt   DateTime?
+  cancelledAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  tenant          Tenant    @relation(fields: [tenantId], references: [id])
+  payments        Payment[]
+}
+
+model Payment {
+  id             String    @id @default(cuid())
+  tenantId       String
+  subscriptionId String?
+  orderId        String    @unique
+  paymentKey     String?
+  amount         Int
+  status         String    @default("pending") // "pending" | "done" | "cancelled" | "failed"
+  method         String?
+  receiptUrl     String?
+  requestedAt    DateTime  @default(now())
+  approvedAt     DateTime?
+
+  tenant         Tenant        @relation(fields: [tenantId], references: [id])
+  subscription   Subscription? @relation(fields: [subscriptionId], references: [id])
 }
 
 model User {
