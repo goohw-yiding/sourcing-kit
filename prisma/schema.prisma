@@ -24,7 +24,7 @@ model User {
   tenantId  String
   name      String
   email     String   @unique
-  password  String
+  password  String?
   role      String   @default("staff")
   createdAt DateTime @default(now())
 
