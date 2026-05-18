@@ -119,6 +119,8 @@ export default function SourcingPage() {
   const [dlStatus, setDlStatus] = useState("");
   const [form, setForm] = useState<Partial<Product>>(DEFAULT_FORM);
   const [saving, setSaving] = useState(false);
+  const [savedProductId, setSavedProductId] = useState<string | null>(null);
+  const [showNextStep, setShowNextStep] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [showQR, setShowQR] = useState(false);
   const [currentRate, setCurrentRate] = useState<number>(0);
@@ -335,6 +337,9 @@ export default function SourcingPage() {
       setCbmStr(""); setBoxL(0); setBoxW(0); setBoxH(0); setBoxQty(0); setCoOriginQty(0);
       setAgentFeeMode("cny"); setAgentFeeCnyStr(""); setAgentFeeUsdStr("");
       setChinaShipMode("cny"); setChinaShipCny(0); setChinaShipUsd(0);
+      // 저장 완료 후 다음 단계 안내
+      setSavedProductId(created.id);
+      setShowNextStep(true);
     } finally {
       setSaving(false);
     }
@@ -1187,7 +1192,7 @@ export default function SourcingPage() {
                 <label className="text-xs text-gray-500">원가 *</label>
                 <div className="flex bg-gray-100 rounded-xl overflow-hidden text-xs font-semibold">
                   <button onClick={() => handleModeChange("cny")} className={`px-2.5 py-1 transition-colors ${priceMode === "cny" ? "bg-orange-500 text-white" : "text-gray-500"}`}>¥ 위안</button>
-                  <button onClick={() => handleModeChange("jpy")} className={`px-2.5 py-1 transition-colors ${priceMode === "jpy" ? "bg-red-500 text-white" : "text-gray-500"}`}>¥ 엔</button>
+                  <button onClick={() => handleModeChange("jpy")} className={`px-2.5 py-1 transition-colors ${priceMode === "jpy" ? "bg-red-500 text-white" : "text-gray-500"}`}>円 엔</button>
                   <button onClick={() => handleModeChange("usd")} className={`px-2.5 py-1 transition-colors ${priceMode === "usd" ? "bg-green-600 text-white" : "text-gray-500"}`}>$ 달러</button>
                   <button onClick={() => handleModeChange("krw")} className={`px-2.5 py-1 transition-colors ${priceMode === "krw" ? "bg-orange-500 text-white" : "text-gray-500"}`}>₩ 원</button>
                 </div>
@@ -2315,6 +2320,64 @@ export default function SourcingPage() {
           ⬇️
         </button>
         </div>
+
+        {/* ── 저장 완료 다음 단계 안내 ── */}
+        {showNextStep && (
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={() => setShowNextStep(false)}>
+            <div className="w-full max-w-lg bg-white rounded-t-3xl p-5 pb-10" onClick={e => e.stopPropagation()}>
+              <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-4" />
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-lg">✅</div>
+                <div>
+                  <p className="font-bold text-gray-900">상품이 저장됐습니다!</p>
+                  <p className="text-xs text-gray-400">소싱 수첩에 등록되었습니다</p>
+                </div>
+              </div>
+              <p className="text-sm text-gray-600 mb-4">다음 단계를 이어서 진행하세요</p>
+              <div className="space-y-2">
+                <button
+                  onClick={() => { setShowNextStep(false); router.push("/orders?new=1"); }}
+                  className="w-full flex items-center gap-3 bg-orange-50 border border-orange-200 rounded-2xl px-4 py-3.5"
+                >
+                  <span className="text-2xl">📦</span>
+                  <div className="text-left flex-1">
+                    <p className="font-bold text-orange-800 text-sm">발주 등록</p>
+                    <p className="text-xs text-orange-500 mt-0.5">수량·단가·납기일 등록하기</p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-orange-400" />
+                </button>
+                <button
+                  onClick={() => { setShowNextStep(false); router.push("/proposals?new=1"); }}
+                  className="w-full flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-2xl px-4 py-3.5"
+                >
+                  <span className="text-2xl">📋</span>
+                  <div className="text-left flex-1">
+                    <p className="font-bold text-blue-800 text-sm">바이어 제안서 작성</p>
+                    <p className="text-xs text-blue-500 mt-0.5">저장된 상품으로 제안서 만들기</p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-blue-400" />
+                </button>
+                <button
+                  onClick={() => { setShowNextStep(false); router.push("/hs"); }}
+                  className="w-full flex items-center gap-3 bg-green-50 border border-green-200 rounded-2xl px-4 py-3.5"
+                >
+                  <span className="text-2xl">🔍</span>
+                  <div className="text-left flex-1">
+                    <p className="font-bold text-green-800 text-sm">HS코드 · 수입규제 확인</p>
+                    <p className="text-xs text-green-500 mt-0.5">관세율 · KC인증 여부 조회</p>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-green-400" />
+                </button>
+                <button
+                  onClick={() => setShowNextStep(false)}
+                  className="w-full text-center text-sm text-gray-400 py-2"
+                >
+                  닫기
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ── 다운로드 모달 ── */}
         {showDownload && (
