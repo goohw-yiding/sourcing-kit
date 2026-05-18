@@ -22,12 +22,14 @@ const WechatProvider = {
     },
   },
   token: {
-    async request({ params }: { params: { code: string } }) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    async request(context: any) {
+      const code = context.params?.code as string;
       const res = await fetch(
         `https://api.weixin.qq.com/sns/oauth2/access_token` +
         `?appid=${process.env.WECHAT_APP_ID}` +
         `&secret=${process.env.WECHAT_APP_SECRET}` +
-        `&code=${params.code}` +
+        `&code=${code}` +
         `&grant_type=authorization_code`
       );
       const data = await res.json();
@@ -41,7 +43,9 @@ const WechatProvider = {
     },
   },
   userinfo: {
-    async request({ tokens }: { tokens: { access_token: string; openid: string } }) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    async request(context: any) {
+      const tokens = context.tokens as { access_token: string; openid: string };
       const res = await fetch(
         `https://api.weixin.qq.com/sns/userinfo` +
         `?access_token=${tokens.access_token}` +
@@ -61,7 +65,7 @@ const WechatProvider = {
   },
   clientId: process.env.WECHAT_APP_ID,
   clientSecret: process.env.WECHAT_APP_SECRET,
-  checks: ["state"] as const,
+  checks: ["state"],
 };
 
 export const authOptions: NextAuthOptions = {
@@ -77,7 +81,8 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
     }),
     // 위챗: WECHAT_APP_ID 설정 시 활성화
-    ...(process.env.WECHAT_APP_ID ? [WechatProvider] : []),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ...(process.env.WECHAT_APP_ID ? [WechatProvider as any] : []),
     CredentialsProvider({
       name: "credentials",
       credentials: {
@@ -115,6 +120,7 @@ export const authOptions: NextAuthOptions = {
               email,
               name: user.name ?? "",
               tenantId: tenant.id,
+              password: null,
             },
           });
         }

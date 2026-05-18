@@ -8,6 +8,8 @@ import { useTranslation } from "@/lib/i18n";
 import { detectMarketLocation } from "@/lib/location";
 import { MARKET_REGIONS, type MarketRegion } from "@/lib/markets";
 import type { ExchangeRates } from "@/app/api/exchange-rate/route";
+import { WaitlistBanner } from "@/components/WaitlistBanner";
+import { WaitlistModal } from "@/components/WaitlistModal";
 
 interface Stats { researching: number; inProgress: number; arrived: number; }
 
@@ -47,6 +49,8 @@ export default function HomePage() {
   const [rates, setRates] = useState<ExchangeRates | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
   const [userName, setUserName] = useState("");
+  const [showWaitlistModal, setShowWaitlistModal] = useState(false);
+  const [showWaitlistBanner, setShowWaitlistBanner] = useState(true);
 
   // 현장 위치
   const [fieldRegion, setFieldRegion] = useState<MarketRegion | null>(null);
@@ -229,6 +233,22 @@ export default function HomePage() {
           </div>
         </Link>
       </div>
+
+      {/* 웨이트리스트 배너 */}
+      {showWaitlistBanner && (
+        <WaitlistBanner
+          showCloseButton
+          onClose={() => setShowWaitlistBanner(false)}
+        />
+      )}
+
+      {/* 웨이트리스트 모달 */}
+      {showWaitlistModal && (
+        <WaitlistModal
+          trigger="pricing"
+          onClose={() => setShowWaitlistModal(false)}
+        />
+      )}
 
       {/* 현장 위치 섹션 */}
       <div className="px-4 pb-4">
