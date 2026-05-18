@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ArrowLeft, Search, Info, ShieldCheck, ShieldX, ShieldAlert, AlertTriangle } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { ChinesePhrase } from "@/components/ChinesePhrase";
 
 interface RegulationInfo {
@@ -55,6 +56,7 @@ function KcBadge({ status }: { status: RegulationInfo["kcRequired"] }) {
 }
 
 export default function HsPage() {
+  const searchParams = useSearchParams();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<HsResult[]>([]);
   const [resultSource, setResultSource] = useState<string>("");
@@ -62,6 +64,16 @@ export default function HsPage() {
   const [selected, setSelected] = useState<HsResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [regLoading, setRegLoading] = useState(false);
+
+  // ?code=XXXXXXXXXX 파라미터로 진입 시 바로 상세 조회
+  useEffect(() => {
+    const code = searchParams.get("code");
+    if (code) {
+      const item: HsResult = { hsCode: code, description: code };
+      selectCode(item);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const search = async () => {
     if (!query.trim()) return;

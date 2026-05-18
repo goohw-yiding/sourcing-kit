@@ -147,8 +147,9 @@ export default function SourcingPage() {
   const [usdKrwRate, setUsdKrwRate] = useState(1350);
   const [jpyKrwRate, setJpyKrwRate] = useState(9.2);
   const [hsQuery, setHsQuery] = useState("");
-  const [hsResults, setHsResults] = useState<{hsCode: string; description: string}[]>([]);
+  const [hsResults, setHsResults] = useState<{hsCode: string; description: string; source?: string}[]>([]);
   const [hsLoading, setHsLoading] = useState(false);
+  const [hsSource, setHsSource] = useState<string>("");
   const [showHsPanel, setShowHsPanel] = useState(false);
   const [importNotes, setImportNotes] = useState("");
   const [hsDescription, setHsDescription] = useState("");
@@ -510,20 +511,26 @@ export default function SourcingPage() {
     try {
       const res = await fetch(`/api/hs/search?q=${encodeURIComponent(hsQuery)}`);
       const data = await res.json();
-      setHsResults(data.items || []);
+      // source를 각 item에 주입
+      const items = (data.items || []).map((item: {hsCode: string; description: string}) => ({
+        ...item,
+        source: data.source || "ai",
+      }));
+      setHsResults(items);
     } finally {
       setHsLoading(false);
     }
   };
 
-  const selectHs = async (hsCode: string, desc: string) => {
+  const selectHs = async (hsCode: string, desc: string, sourceHint?: string) => {
     setShowHsPanel(false);
     setHsQuery(desc);
     setHsDescription(desc);
-    const res = await fetch(`/api/hs/rate?hs=${hsCode}`);
+    const res = await fetch(`/api/hs/rate?hs=${hsCode}&name=${encodeURIComponent(desc)}`);
     const data = await res.json();
     setF("customsRate", data.rate);
     setF("hsCode", hsCode);
+    setHsSource(sourceHint || data.source || "ai");
     setImportNotes(data.importNotes || "");
   };
 
@@ -1436,10 +1443,14 @@ export default function SourcingPage() {
                       {hsResults.length > 0 && (
                         <div className="border border-gray-100 rounded-lg overflow-hidden">
                           {hsResults.map((r) => (
-                            <button key={r.hsCode} onClick={() => selectHs(r.hsCode, r.description)}
+                            <button key={r.hsCode} onClick={() => selectHs(r.hsCode, r.description, r.source)}
                               className="w-full text-left px-3 py-2.5 text-sm hover:bg-blue-50 border-b border-gray-50 last:border-0">
-                              <span className="font-mono text-blue-600">{r.hsCode}</span>
-                              <span className="ml-2 text-gray-700">{r.description}</span>
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-mono text-blue-600">{r.hsCode}</span>
+                                {r.source === "unipass" && <span className="text-[10px] bg-green-100 text-green-700 px-1 rounded">관세청</span>}
+                                {r.source === "ai" && <span className="text-[10px] bg-amber-100 text-amber-600 px-1 rounded">AI</span>}
+                              </div>
+                              <span className="text-gray-600 text-xs">{r.description}</span>
                             </button>
                           ))}
                         </div>
@@ -1447,13 +1458,49 @@ export default function SourcingPage() {
                     </div>
                   )}
                   {form.hsCode && (
-                    <div className="bg-blue-50 border border-blue-200 rounded-xl px-3 py-2 flex items-center gap-2">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-mono font-bold text-blue-700">HS {form.hsCode as string}</span>
-                          <span className="text-xs text-blue-400">AI추정</span>
+                    <div className="space-y-2 mt-1">
+                      {/* HS코드 배지 */}
+                      <div className={`rounded-xl px-3 py-2.5 border ${
+                        hsSource === "unipass" ? "bg-green-50 border-green-200" :
+                        hsSource === "local-db" ? "bg-blue-50 border-blue-200" :
+                        "bg-amber-50 border-amber-300"
+                      }`}>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className={`text-sm font-mono font-bold ${
+                            hsSource === "unipass" ? "text-green-700" :
+                            hsSource === "local-db" ? "text-blue-700" : "text-amber-700"
+                          }`}>HS {form.hsCode as string}</span>
+                          {hsSource === "unipass" ? (
+                            <span className="text-[10px] bg-green-100 text-green-700 font-bold px-2 py-0.5 rounded-full border border-green-200">✅ 관세청 공식</span>
+                          ) : hsSource === "local-db" ? (
+                            <span className="text-[10px] bg-blue-100 text-blue-700 font-bold px-2 py-0.5 rounded-full border border-blue-200">📋 내부 DB</span>
+                          ) : (
+                            <span className="text-[10px] bg-amber-100 text-amber-700 font-bold px-2 py-0.5 rounded-full border border-amber-200">🤖 AI 추정</span>
+                          )}
                         </div>
-                        {hsDescription && <p className="text-xs text-blue-600 mt-0.5">{hsDescription}</p>}
+                        {hsDescription && <p className={`text-xs mt-0.5 ${hsSource === "unipass" ? "text-green-600" : hsSource === "local-db" ? "text-blue-600" : "text-amber-600"}`}>{hsDescription}</p>}
+                      </div>
+
+                      {/* AI추정일 때 경고 메시지 */}
+                      {hsSource !== "unipass" && (
+                        <p className="text-[11px] text-amber-600">⚠️ {hsSource === "ai" ? "AI가 추정한 코드입니다." : "참고용 코드입니다."} 아래 버튼으로 정확성을 꼭 확인하세요.</p>
+                      )}
+
+                      {/* 검증 버튼 2개 */}
+                      <div className="flex gap-2">
+                        <Link
+                          href={`/hs?code=${form.hsCode}`}
+                          className="flex-1 flex items-center justify-center gap-1 text-xs bg-white border border-gray-200 rounded-xl py-2 text-gray-700 font-medium"
+                        >
+                          🔍 앱에서 상세조회
+                        </Link>
+                        <a
+                          href={`https://unipass.customs.go.kr/clip/hsinfosrch/openULS0201005Q.do?searchVal=${form.hsCode}`}
+                          target="_blank" rel="noopener noreferrer"
+                          className="flex-1 flex items-center justify-center gap-1 text-xs bg-white border border-green-200 rounded-xl py-2 text-green-700 font-medium"
+                        >
+                          🌐 관세청 CLIP
+                        </a>
                       </div>
                     </div>
                   )}
