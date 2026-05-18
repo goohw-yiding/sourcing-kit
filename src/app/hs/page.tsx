@@ -16,15 +16,26 @@ interface RegulationInfo {
   etcNotes?: string[];
 }
 
+interface FtaRates {
+  CN?: number;
+  US?: number;
+  JP?: number;
+  VN?: number;
+  SG?: number;
+}
+
 interface HsResult {
   hsCode: string;
   description: string;
   reason?: string;
   rate?: number;
-  ftaRate?: number;
+  ftaRate?: number;   // 레거시 (사용 안 함)
+  ftaRates?: FtaRates;
   importNotes?: string;
   notice?: string;
   regulations?: RegulationInfo;
+  source?: string;
+  sourceLabel?: string;
 }
 
 function KcBadge({ status }: { status: RegulationInfo["kcRequired"] }) {
@@ -74,7 +85,15 @@ export default function HsPage() {
     try {
       const res = await fetch(`/api/hs/rate?hs=${item.hsCode}&name=${encodeURIComponent(item.description)}`);
       const data = await res.json();
-      setSelected(prev => prev ? { ...prev, rate: data.rate, ftaRate: data.ftaRate, importNotes: data.importNotes, regulations: data.regulations } : prev);
+      setSelected(prev => prev ? {
+        ...prev,
+        rate: data.rate,
+        ftaRates: data.ftaRates,
+        importNotes: data.importNotes,
+        regulations: data.regulations,
+        source: data.source,
+        sourceLabel: data.sourceLabel,
+      } : prev);
     } finally {
       setRegLoading(false);
     }
@@ -127,14 +146,16 @@ export default function HsPage() {
         {results.length > 0 && !selected && (
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-2">
-              {resultSource === "ai" ? (
-                <>
-                  <span className="text-xs bg-purple-100 text-purple-700 font-semibold px-2 py-0.5 rounded-full">🤖 AI 추천</span>
-                  <p className="text-sm font-semibold text-gray-700">{results.length}개 후보 — 클릭하면 규제정보 확인</p>
-                </>
-              ) : (
-                <p className="text-sm font-semibold text-gray-700">검색 결과 {results.length}건 — 클릭하면 규제정보 확인</p>
+              {resultSource === "unipass" && (
+                <span className="text-xs bg-green-100 text-green-700 font-semibold px-2 py-0.5 rounded-full">✅ 관세청 공식</span>
               )}
+              {resultSource === "local-db" && (
+                <span className="text-xs bg-blue-100 text-blue-700 font-semibold px-2 py-0.5 rounded-full">📋 내부 DB</span>
+              )}
+              {resultSource === "ai" && (
+                <span className="text-xs bg-purple-100 text-purple-700 font-semibold px-2 py-0.5 rounded-full">🤖 AI 추정</span>
+              )}
+              <p className="text-sm font-semibold text-gray-700">{results.length}건 — 클릭하면 세율·규제 확인</p>
             </div>
             {aiNote && (
               <div className="px-4 py-2 bg-purple-50 text-xs text-purple-600 border-b border-purple-100">
@@ -268,55 +289,110 @@ export default function HsPage() {
             {/* 관세율 카드 */}
             {!regLoading && selected.rate !== undefined && (
               <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 space-y-4">
+                {/* 헤더: 기본세율 + 출처 배지 */}
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="text-sm text-gray-500 mb-1">기본 관세율</div>
+                    <div className="text-xs text-gray-400 mb-0.5">기본 관세율 (일반세율)</div>
                     <div className="text-3xl font-bold text-gray-900">{(selected.rate * 100).toFixed(1)}%</div>
                   </div>
-                  {selected.ftaRate !== undefined && (
-                    <div className="text-right">
-                      <div className="text-xs text-green-600 mb-1">한-중 FTA 적용 시</div>
-                      <div className="text-xl font-bold text-green-600">{(selected.ftaRate * 100).toFixed(1)}%</div>
-                      <div className="text-[10px] text-gray-400">원산지증명서(C/O) 필요</div>
-                    </div>
-                  )}
+                  <div className="text-right">
+                    {selected.source === "unipass" ? (
+                      <span className="text-xs bg-green-100 text-green-700 font-bold px-2.5 py-1 rounded-full">✅ 관세청 공식</span>
+                    ) : selected.source === "local-db" ? (
+                      <span className="text-xs bg-blue-100 text-blue-700 font-bold px-2.5 py-1 rounded-full">📋 내부 DB</span>
+                    ) : (
+                      <span className="text-xs bg-purple-100 text-purple-700 font-bold px-2.5 py-1 rounded-full">🤖 AI 추정</span>
+                    )}
+                  </div>
                 </div>
 
-                <div className="bg-orange-50 rounded-xl p-4">
-                  <div className="text-sm font-semibold text-orange-800 mb-2">계산 예시 (원가 100만원 기준)</div>
-                  <div className="space-y-1 text-sm text-orange-700">
+                {/* FTA 협정세율 국가별 테이블 */}
+                {selected.ftaRates && (
+                  <div className="rounded-xl border border-gray-100 overflow-hidden">
+                    <div className="bg-gray-50 px-3 py-2 border-b border-gray-100">
+                      <p className="text-xs font-bold text-gray-600">🤝 FTA 협정세율 <span className="font-normal text-gray-400">(원산지증명서 C/O 제출 시)</span></p>
+                    </div>
+                    <div className="divide-y divide-gray-50">
+                      {[
+                        { code: "CN", flag: "🇨🇳", country: "중국", agreement: "한-중 FTA" },
+                        { code: "JP", flag: "🇯🇵", country: "일본", agreement: "RCEP" },
+                        { code: "US", flag: "🇺🇸", country: "미국", agreement: "한-미 FTA" },
+                        { code: "VN", flag: "🇻🇳", country: "베트남", agreement: "한-ASEAN" },
+                        { code: "SG", flag: "🇸🇬", country: "싱가포르", agreement: "한-ASEAN" },
+                      ].map(({ code, flag, country, agreement }) => {
+                        const fta = selected.ftaRates?.[code as keyof FtaRates];
+                        if (fta === undefined) return null;
+                        const saving = selected.rate! - fta;
+                        return (
+                          <div key={code} className="flex items-center px-3 py-2.5">
+                            <span className="text-base mr-2">{flag}</span>
+                            <div className="flex-1">
+                              <span className="text-sm font-semibold text-gray-800">{country}</span>
+                              <span className="text-[10px] text-gray-400 ml-1.5">{agreement}</span>
+                            </div>
+                            <div className="text-right">
+                              <span className={`text-base font-bold ${fta === 0 ? "text-green-600" : "text-blue-600"}`}>
+                                {fta === 0 ? "무관세" : `${(fta * 100).toFixed(1)}%`}
+                              </span>
+                              {saving > 0 && (
+                                <span className="text-[10px] text-green-500 ml-1.5">
+                                  {(saving * 100).toFixed(1)}%p↓
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div className="bg-blue-50 px-3 py-2 border-t border-gray-100">
+                      <p className="text-[10px] text-blue-600">💡 중국산 수입 시 거래처에 원산지증명서(C/O) 발급 요청하면 FTA 세율 적용</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* 계산 예시 */}
+                <div className="bg-orange-50 rounded-xl p-3">
+                  <div className="text-xs font-semibold text-orange-800 mb-2">계산 예시 (원가 100만원 기준)</div>
+                  <div className="space-y-1 text-xs text-orange-700">
                     <div className="flex justify-between">
-                      <span>관세</span>
-                      <span>{(1000000 * selected.rate).toLocaleString()}원</span>
+                      <span>관세 ({(selected.rate * 100).toFixed(1)}%)</span>
+                      <span>{Math.round(1000000 * selected.rate).toLocaleString()}원</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>부가세 (10%)</span>
-                      <span>{(1000000 * (1 + selected.rate) * 0.1).toLocaleString()}원</span>
+                      <span>부가세 10%</span>
+                      <span>{Math.round(1000000 * (1 + selected.rate) * 0.1).toLocaleString()}원</span>
                     </div>
                     <div className="flex justify-between font-bold pt-1 border-t border-orange-200 mt-1">
                       <span>세금 합계</span>
-                      <span>{(1000000 * selected.rate + 1000000 * (1 + selected.rate) * 0.1).toLocaleString()}원</span>
+                      <span>{Math.round(1000000 * selected.rate + 1000000 * (1 + selected.rate) * 0.1).toLocaleString()}원</span>
                     </div>
+                    {selected.ftaRates?.CN !== undefined && selected.ftaRates.CN < selected.rate && (
+                      <div className="flex justify-between text-green-700 font-bold pt-1 border-t border-orange-200 mt-1">
+                        <span>한-중 FTA 적용 시</span>
+                        <span>{Math.round(1000000 * selected.ftaRates.CN + 1000000 * (1 + selected.ftaRates.CN) * 0.1).toLocaleString()}원</span>
+                      </div>
+                    )}
                   </div>
-                  <p className="text-xs text-orange-500 mt-2">* 참고용 견적</p>
+                  <p className="text-[10px] text-orange-400 mt-1.5">* 참고용 견적. 실제 세율은 관세청에서 최종 확인</p>
                 </div>
 
                 {selected.importNotes && (
-                  <div className="flex gap-2 text-sm text-amber-700 bg-amber-50 rounded-xl px-3 py-3">
-                    <Info className="w-4 h-4 mt-0.5 shrink-0" />
+                  <div className="flex gap-2 bg-amber-50 rounded-xl px-3 py-2.5">
+                    <Info className="w-4 h-4 mt-0.5 shrink-0 text-amber-600" />
                     <div>
-                      <div className="font-semibold mb-0.5">수출입 요령</div>
-                      <div className="text-sm">{selected.importNotes}</div>
+                      <div className="text-xs font-semibold text-amber-800 mb-0.5">수입 시 주의</div>
+                      <div className="text-xs text-amber-700">{selected.importNotes}</div>
                     </div>
                   </div>
                 )}
 
                 <div className="space-y-2">
-                  <a href="https://unipass.customs.go.kr/clip/index.do" target="_blank" rel="noopener noreferrer"
+                  <a href={`https://unipass.customs.go.kr/clip/hsinfosrch/openULS0201005Q.do?searchVal=${selected.hsCode}`}
+                    target="_blank" rel="noopener noreferrer"
                     className="flex items-center justify-between w-full bg-green-50 border border-green-200 rounded-xl px-4 py-3">
                     <div>
-                      <div className="text-sm font-semibold text-green-800">관세청 UNI-PASS</div>
-                      <div className="text-xs text-green-600 mt-0.5">품목별 수출입요령 · 법령정보</div>
+                      <div className="text-sm font-semibold text-green-800">관세청 CLIP에서 확인</div>
+                      <div className="text-xs text-green-600 mt-0.5">공식 세율표 · FTA 협정세율 전체 보기</div>
                     </div>
                     <span className="text-green-600 text-lg">→</span>
                   </a>
