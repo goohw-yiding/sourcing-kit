@@ -77,7 +77,7 @@ export async function GET(req: NextRequest) {
   XLSX.utils.book_append_sheet(wb, ws, "소싱 목록");
 
   const buf = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
-  const filename = `소싱샷_${new Date().toISOString().slice(0, 10)}.xlsx`;
+  const filename = `소싱킷_${new Date().toISOString().slice(0, 10)}.xlsx`;
 
   return new NextResponse(buf, {
     headers: {

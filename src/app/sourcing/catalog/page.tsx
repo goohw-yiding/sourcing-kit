@@ -224,7 +224,7 @@ function CatalogContent() {
 
         {/* 하단 */}
         <div className="mt-12 pt-4 border-t border-gray-200 text-xs text-gray-400 flex justify-between">
-          <span>소싱샷 (SosingShot)</span>
+          <span>소싱킷 (SourcingKit)</span>
           <span>{today} 출력</span>
         </div>
       </div>

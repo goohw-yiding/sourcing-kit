@@ -28,7 +28,7 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){
-  var T={navy:['#0F2D59','#1E4080','#EEF2F8'],forest:['#1A4731','#2D7A50','#ECFDF5'],charcoal:['#1C1C2E','#2D2D44','#F5F3FF']};
+  var T={navy:['#0F2D59','#1E4080','#EEF2F8'],forest:['#1A4731','#2D7A50','#ECFDF5'],charcoal:['#1C1C2E','#2D2D44','#F5F3FF'],sky:['#1565C0','#1E88E5','#E3F2FD']};
   try{var id=localStorage.getItem('theme')||'navy';var v=T[id]||T.navy;var r=document.documentElement;r.style.setProperty('--primary',v[0]);r.style.setProperty('--primary-light',v[1]);r.style.setProperty('--primary-lighter',v[2]);r.setAttribute('data-theme',id);}catch(e){}
 })();`,
           }}

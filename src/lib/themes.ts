@@ -42,9 +42,18 @@ export const THEMES: Theme[] = [
     previewAccent: "#2D2D44",
     vars: { primary: "#1C1C2E", primaryLight: "#2D2D44", primaryLighter: "#F5F3FF" },
   },
+  {
+    id: "sky",
+    label: "스카이블루",
+    desc: "밝고 경쾌한 블루",
+    color: "#1565C0",
+    previewBg: "#1565C0",
+    previewAccent: "#1E88E5",
+    vars: { primary: "#1565C0", primaryLight: "#1E88E5", primaryLighter: "#E3F2FD" },
+  },
 ];
 
-export type ThemeId = "navy" | "forest" | "charcoal";
+export type ThemeId = "navy" | "forest" | "charcoal" | "sky";
 
 /** CSS 변수를 document.documentElement.style로 직접 주입 (Tailwind v4 호환) */
 export function applyTheme(id: ThemeId) {

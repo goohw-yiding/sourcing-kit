@@ -27,7 +27,7 @@ const dict: Dict = {
   "ob.theme_sub":     { ko:"나중에 설정에서 바꿀 수 있어요", en:"You can change this later in settings", ja:"後で設定から変更できます", zh:"稍后可在设置中更改", vi:"Có thể thay đổi sau trong cài đặt" },
   "ob.next":          { ko:"다음", en:"Next", ja:"次へ", zh:"下一步", vi:"Tiếp theo" },
   "ob.start":         { ko:"시작하기 🚀", en:"Get Started 🚀", ja:"始める 🚀", zh:"开始使用 🚀", vi:"Bắt đầu 🚀" },
-  "ob.app_name":      { ko:"소싱샷", en:"소싱샷", ja:"소싱샷", zh:"소싱샷", vi:"소싱샷" },
+  "ob.app_name":      { ko:"소싱킷", en:"소싱킷", ja:"소싱킷", zh:"소싱킷", vi:"소싱킷" },
   "ob.app_desc":      { ko:"중국 무역 소싱 관리", en:"China Trade Sourcing Manager", ja:"中国貿易仕入れ管理", zh:"中国贸易采购管理", vi:"Quản lý mua hàng thương mại Trung Quốc" },
 
   // ── 인삿말 (랜덤) ──
