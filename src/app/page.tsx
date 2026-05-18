@@ -308,7 +308,7 @@ export default function HomePage() {
       </div>
 
       {/* 메뉴 바로가기 */}
-      <div className="px-4 pb-4">
+      <div className="px-4 pb-28">
         <p className="text-xs font-semibold text-gray-400 mb-3 uppercase tracking-wide">{t("home.menu")}</p>
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           {menuItems.map((item, i, arr) => (
