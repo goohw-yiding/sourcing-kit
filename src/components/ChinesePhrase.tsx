@@ -11,13 +11,49 @@ export function ChinesePhrase({ phrases }: Props) {
   const [error, setError] = useState<number | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const speak = useCallback(async (cn: string, idx: number) => {
+  // Web Speech API 폴백 (기기 내장 음성)
+  const tryWebSpeech = useCallback((cn: string, idx: number) => {
+    if (typeof window === "undefined" || !window.speechSynthesis) {
+      setError(idx);
+      return;
+    }
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(cn);
+    u.lang = "zh-CN";
+    u.rate = 0.8;
+
+    const applyVoice = () => {
+      const voices = window.speechSynthesis.getVoices();
+      const zhVoice =
+        voices.find((v) => v.lang === "zh-CN") ||
+        voices.find((v) => v.lang.startsWith("zh"));
+      if (zhVoice) u.voice = zhVoice;
+    };
+
+    applyVoice();
+    u.onend = () => setPlaying(null);
+    u.onerror = () => setError(idx);
+
+    if (window.speechSynthesis.getVoices().length === 0) {
+      window.speechSynthesis.onvoiceschanged = () => {
+        window.speechSynthesis.onvoiceschanged = null;
+        applyVoice();
+        window.speechSynthesis.speak(u);
+      };
+    } else {
+      window.speechSynthesis.speak(u);
+    }
+  }, []);
+
+  const speak = useCallback((cn: string, idx: number) => {
     // 재생 중이면 정지
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.src = "";
       audioRef.current = null;
     }
+    window.speechSynthesis?.cancel();
+
     if (playing === idx) {
       setPlaying(null);
       return;
@@ -26,74 +62,33 @@ export function ChinesePhrase({ phrases }: Props) {
     setPlaying(idx);
     setError(null);
 
-    // 1차: 서버 TTS (Edge TTS → Google TTS 폴백)
-    // fetch → blob → objectURL 방식 (모바일 자동재생 제한 우회)
-    try {
-      const res = await fetch(`/api/tts?text=${encodeURIComponent(cn)}&lang=zh-CN`);
-      if (!res.ok) throw new Error(`TTS API ${res.status}`);
+    // ✅ iOS 자동재생 핵심 수정:
+    // fetch + blob 방식 대신 audio.src 를 API URL 로 직접 설정 후 즉시 play()
+    // → 사용자 클릭 이벤트 컨텍스트가 깨지지 않아 iOS Safari 에서도 작동
+    const audio = new Audio();
+    audioRef.current = audio;
+    audio.preload = "auto";
 
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
+    audio.onended = () => {
+      setPlaying(null);
+      audioRef.current = null;
+    };
 
-      const audio = new Audio();
-      audioRef.current = audio;
+    audio.onerror = () => {
+      setPlaying(null);
+      audioRef.current = null;
+      // 서버 TTS 실패 → Web Speech API 폴백
+      tryWebSpeech(cn, idx);
+    };
 
-      audio.src = url;
-      audio.onended = () => {
-        setPlaying(null);
-        URL.revokeObjectURL(url);
-      };
-      audio.onerror = () => {
-        setPlaying(null);
-        URL.revokeObjectURL(url);
-      };
+    audio.src = `/api/tts?text=${encodeURIComponent(cn)}&lang=zh-CN`;
 
-      await audio.play();
-      return;
-    } catch (e) {
-      console.warn("[TTS] 서버 TTS 실패, Web Speech 시도:", e);
-    }
-
-    // 2차 폴백: Web Speech API (기기 내장 음성)
-    if (typeof window !== "undefined" && window.speechSynthesis) {
-      try {
-        await new Promise<void>((resolve, reject) => {
-          window.speechSynthesis.cancel();
-          const u = new SpeechSynthesisUtterance(cn);
-          u.lang = "zh-CN";
-          u.rate = 0.8;
-
-          const voices = window.speechSynthesis.getVoices();
-          const zhVoice =
-            voices.find((v) => v.lang === "zh-CN") ||
-            voices.find((v) => v.lang.startsWith("zh"));
-          if (zhVoice) u.voice = zhVoice;
-
-          u.onend = () => { setPlaying(null); resolve(); };
-          u.onerror = (e) => reject(e);
-
-          // 음성 로딩 대기 후 실행
-          if (voices.length === 0) {
-            window.speechSynthesis.onvoiceschanged = () => {
-              window.speechSynthesis.onvoiceschanged = null;
-              window.speechSynthesis.speak(u);
-            };
-          } else {
-            window.speechSynthesis.speak(u);
-          }
-
-          setTimeout(() => reject(new Error("timeout")), 5000);
-        });
-        return;
-      } catch (e) {
-        console.warn("[TTS] Web Speech 실패:", e);
-      }
-    }
-
-    // 모두 실패
-    setPlaying(null);
-    setError(idx);
-  }, [playing]);
+    audio.play().catch(() => {
+      setPlaying(null);
+      audioRef.current = null;
+      tryWebSpeech(cn, idx);
+    });
+  }, [playing, tryWebSpeech]);
 
   return (
     <div className="mb-1">
