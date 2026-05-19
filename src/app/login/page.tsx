@@ -207,6 +207,11 @@ function LoginForm() {
               회원가입
             </Link>
           </p>
+          <p className="text-center text-xs text-gray-400 mt-4">
+            <Link href="/terms" className="underline hover:text-gray-600">이용약관</Link>
+            {" · "}
+            <Link href="/privacy" className="underline hover:text-gray-600">개인정보처리방침</Link>
+          </p>
         </div>
       </div>
     </div>
