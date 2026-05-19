@@ -18,11 +18,6 @@ function detectWebView(): boolean {
   return /KAKAOTALK|NAVER|Line|Instagram|FB_IAB|FBAN|Twitter|Snapchat|WebView/i.test(ua);
 }
 
-/** 위챗 내부 브라우저 감지 */
-function detectWechat(): boolean {
-  if (typeof window === "undefined") return false;
-  return /MicroMessenger/i.test(navigator.userAgent);
-}
 
 function LoginForm() {
   const router = useRouter();
@@ -158,21 +153,6 @@ function LoginForm() {
               )}
             </button>
 
-            {/* 위챗 */}
-            <button
-              type="button"
-              onClick={() => handleSocialLogin("wechat")}
-              disabled={!!socialLoading}
-              className="w-full bg-[#07C160] text-white rounded-xl py-3.5 font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60 relative"
-            >
-              {/* 위챗 공식 로고 SVG */}
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
-                <path d="M8.691 2.188C3.891 2.188 0 5.476 0 9.53c0 2.21 1.17 4.2 3.002 5.55a.59.59 0 0 1 .213.664l-.39 1.48c-.02.07-.049.14-.049.213 0 .163.13.295.291.295a.33.33 0 0 0 .167-.054l1.903-1.113a.86.86 0 0 1 .717-.099 10.16 10.16 0 0 0 2.837.403c.276 0 .543-.027.811-.05-.857-2.578.157-4.972 1.932-6.446 1.703-1.415 3.882-1.98 5.853-1.838C16.579 5.053 13.01 2.188 8.691 2.188zM5.785 5.99a1.17 1.17 0 1 1 0 2.341 1.17 1.17 0 0 1 0-2.34zm5.813 0a1.17 1.17 0 1 1 0 2.341 1.17 1.17 0 0 1 0-2.34z"/>
-                <path d="M23.993 15.957c0-3.326-3.31-6.023-7.393-6.023-4.083 0-7.393 2.697-7.393 6.023 0 3.325 3.31 6.022 7.393 6.022.836 0 1.635-.118 2.385-.332a.72.72 0 0 1 .598.082l1.583.926a.27.27 0 0 0 .14.046c.133 0 .241-.11.241-.247 0-.06-.024-.12-.039-.178l-.327-1.232a.582.582 0 0 1-.023-.157.49.49 0 0 1 .201-.397c1.529-1.085 2.634-2.719 2.634-4.532zm-10.045-.97a.983.983 0 1 1 0-1.965.983.983 0 0 1 0 1.966zm5.505 0a.983.983 0 1 1 0-1.965.983.983 0 0 1 0 1.966z"/>
-              </svg>
-              {socialLoading === "wechat" ? "연결 중..." : "위챗으로 시작하기 (微信)"}
-              <span className="absolute right-3 text-[10px] text-green-100 font-normal">준비중</span>
-            </button>
           </div>
 
           <div className="flex items-center gap-3 mb-6">
