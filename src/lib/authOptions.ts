@@ -105,29 +105,34 @@ export const authOptions: NextAuthOptions = {
     async signIn({ user, account }) {
       // 소셜 로그인: DB에 User/Tenant 자동 생성 또는 조회
       if (account?.provider === "kakao" || account?.provider === "google" || account?.provider === "wechat") {
-        // 카카오는 기본 스코프에서 이메일을 주지 않을 수 있음 → providerAccountId로 대체
-        const email =
-          user.email ||
-          `${account.provider}_${account.providerAccountId}@sourcing-kit.app`;
+        try {
+          // 카카오는 기본 스코프에서 이메일을 주지 않을 수 있음 → providerAccountId로 대체
+          const email =
+            user.email ||
+            `${account.provider}_${account.providerAccountId}@sourcing-kit.app`;
 
-        let dbUser = await prisma.user.findUnique({ where: { email } });
-        if (!dbUser) {
-          const tenant = await prisma.tenant.create({
-            data: { name: user.name ?? "소싱킷 사용자" },
-          });
-          dbUser = await prisma.user.create({
-            data: {
-              email,
-              name: user.name ?? "",
-              tenantId: tenant.id,
-              password: null,
-            },
-          });
+          let dbUser = await prisma.user.findUnique({ where: { email } });
+          if (!dbUser) {
+            const tenant = await prisma.tenant.create({
+              data: { name: user.name ?? "소싱킷 사용자" },
+            });
+            dbUser = await prisma.user.create({
+              data: {
+                email,
+                name: user.name ?? "",
+                tenantId: tenant.id,
+                password: null,
+              },
+            });
+          }
+          // user 객체에 tenantId 주입 (jwt 콜백으로 전달)
+          (user as { tenantId?: string }).tenantId = dbUser.tenantId;
+          user.id = dbUser.id;
+          user.email = email;
+        } catch (err) {
+          console.error("[authOptions] signIn 콜백 오류:", err);
+          return false; // 로그인 실패 → NextAuth가 에러 페이지로 리다이렉트
         }
-        // user 객체에 tenantId 주입 (jwt 콜백으로 전달)
-        (user as { tenantId?: string }).tenantId = dbUser.tenantId;
-        user.id = dbUser.id;
-        user.email = email;
       }
       return true;
     },
