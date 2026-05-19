@@ -2,20 +2,68 @@
 
 /**
  * /payment/billing
- * 토스페이먼츠 빌링키 인증 후 리다이렉트되는 페이지
- * 쿼리: authKey, customerKey
+ * 토스페이먼츠 결제 완료 후 리다이렉트 페이지
+ *
+ * planType=taste    → paymentKey + orderId 단건 결제 승인
+ * planType=monthly  → authKey + customerKey 빌링키 발급 + Pro 월구독
+ * planType=yearly   → authKey + customerKey 빌링키 발급 + Pro 연구독
  */
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CheckCircle, XCircle, Loader2 } from "lucide-react";
+
+const PLAN_LABELS: Record<string, string> = {
+  taste: "맛보기 30일 플랜",
+  monthly: "Pro 월간 구독",
+  yearly: "Pro 연간 구독",
+};
 
 export default function PaymentBillingPage() {
   const router = useRouter();
   const params = useSearchParams();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [message, setMessage] = useState("");
+  const [planLabel, setPlanLabel] = useState("");
 
   useEffect(() => {
+    const planType = params.get("planType") ?? "monthly";
+    setPlanLabel(PLAN_LABELS[planType] ?? "플랜");
+
+    // 맛보기: 단건 결제 승인 (paymentKey + orderId)
+    if (planType === "taste") {
+      const paymentKey = params.get("paymentKey");
+      const orderId = params.get("orderId");
+
+      if (!paymentKey || !orderId) {
+        setStatus("error");
+        setMessage("결제 정보가 없습니다.");
+        return;
+      }
+
+      fetch("/api/payment/billing", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ planType: "taste", paymentKey, orderId }),
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.ok) {
+            setStatus("success");
+            setMessage("맛보기 30일이 시작됐습니다!");
+            setTimeout(() => router.push("/"), 2500);
+          } else {
+            setStatus("error");
+            setMessage(data.error || "결제에 실패했습니다.");
+          }
+        })
+        .catch(() => {
+          setStatus("error");
+          setMessage("네트워크 오류가 발생했습니다.");
+        });
+      return;
+    }
+
+    // Pro 월/연: 빌링키 발급 (authKey + customerKey)
     const authKey = params.get("authKey");
     const customerKey = params.get("customerKey");
 
@@ -28,13 +76,13 @@ export default function PaymentBillingPage() {
     fetch("/api/payment/billing", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ authKey, customerKey }),
+      body: JSON.stringify({ planType, authKey, customerKey }),
     })
       .then((r) => r.json())
       .then((data) => {
         if (data.ok) {
           setStatus("success");
-          setMessage("Pro 플랜이 활성화됐습니다!");
+          setMessage(`${PLAN_LABELS[planType] ?? "Pro 플랜"}이 활성화됐습니다!`);
           setTimeout(() => router.push("/"), 2500);
         } else {
           setStatus("error");
@@ -54,7 +102,7 @@ export default function PaymentBillingPage() {
           <>
             <Loader2 className="w-12 h-12 text-[var(--primary)] animate-spin mx-auto" />
             <p className="text-gray-700 font-semibold">결제를 처리하고 있습니다...</p>
-            <p className="text-sm text-gray-400">잠시만 기다려 주세요</p>
+            <p className="text-sm text-gray-400">{planLabel && `${planLabel} 활성화 중`}</p>
           </>
         )}
         {status === "success" && (

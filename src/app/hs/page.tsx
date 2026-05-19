@@ -5,6 +5,7 @@ import { ArrowLeft, Search, Info, ShieldCheck, ShieldX, ShieldAlert, AlertTriang
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { ChinesePhrase } from "@/components/ChinesePhrase";
+import { AiLimitBanner } from "@/components/AiLimitBanner";
 
 interface RegulationInfo {
   kcRequired: "필수" | "불필요" | "조건부" | "확인필요";
@@ -64,6 +65,7 @@ export default function HsPage() {
   const [selected, setSelected] = useState<HsResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [regLoading, setRegLoading] = useState(false);
+  const [aiLimitInfo, setAiLimitInfo] = useState<{ used: number; limit: number; plan: string } | null>(null);
 
   // ?code=XXXXXXXXXX 파라미터로 진입 시 바로 상세 조회
   useEffect(() => {
@@ -84,9 +86,14 @@ export default function HsPage() {
     try {
       const res = await fetch(`/api/hs/search?q=${encodeURIComponent(query)}`);
       const data = await res.json();
-      setResults(data.items || []);
-      setResultSource(data.source || "");
-      setAiNote(data.aiNote || "");
+      if (res.status === 429 && data.code === "AI_LIMIT") {
+        setAiLimitInfo({ used: data.used, limit: data.limit, plan: data.planName ?? "free" });
+      } else {
+        setAiLimitInfo(null);
+        setResults(data.items || []);
+        setResultSource(data.source || "");
+        setAiNote(data.aiNote || "");
+      }
     } finally {
       setLoading(false);
     }
@@ -115,6 +122,14 @@ export default function HsPage() {
 
   return (
     <div className="min-h-screen pb-28 bg-[#F4F6FA]">
+      {aiLimitInfo && (
+        <AiLimitBanner
+          used={aiLimitInfo.used}
+          limit={aiLimitInfo.limit}
+          plan={aiLimitInfo.plan}
+          onClose={() => setAiLimitInfo(null)}
+        />
+      )}
       <header className="bg-[var(--primary)] text-white px-5 pt-14 pb-5 flex items-center gap-3">
         <Link href="/" className="p-1"><ArrowLeft className="w-5 h-5" /></Link>
         <h1 className="text-lg font-bold">HS코드 · 수입규제 조회</h1>

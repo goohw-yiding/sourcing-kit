@@ -227,7 +227,7 @@ export async function GET(req: NextRequest) {
   const query = req.nextUrl.searchParams.get("q") || "";
   if (!query.trim()) return NextResponse.json({ items: [], source: "empty" });
 
-  // 1순위: 유니패스 공식 API (API018)
+  // 1순위: 유니패스 공식 API (API018) — AI 아님, 횟수 차감 없음
   const unipassItems = await searchUnipassHS(query);
   if (unipassItems.length > 0) {
     return NextResponse.json({
@@ -237,7 +237,7 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  // 2순위: 로컬 DB
+  // 2순위: 로컬 DB — AI 아님, 횟수 차감 없음
   const localItems = searchLocal(query);
   if (localItems.length > 0) {
     return NextResponse.json({
@@ -247,8 +247,32 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  // 3순위: AI
+  // 3순위: AI — 일일 횟수 차감
   if (process.env.ANTHROPIC_API_KEY && query.trim()) {
+    // 인증 확인
+    const { getAuthTenantId } = await import("@/lib/getAuth");
+    const { checkAndIncrementAiUsage, PLANS, getTenantPlan } = await import("@/lib/subscription");
+
+    const auth = await getAuthTenantId();
+    if (!(auth instanceof NextResponse)) {
+      const { tenantId } = auth;
+      const { allowed, used, limit } = await checkAndIncrementAiUsage(tenantId);
+      if (!allowed) {
+        const plan = await getTenantPlan(tenantId);
+        const nextPlan = plan === "free" ? "맛보기(일 20회)" : "Pro(무제한)";
+        return NextResponse.json(
+          {
+            error: `오늘 AI 분석 횟수(${limit}회)를 모두 사용했습니다. ${nextPlan} 플랜으로 업그레이드하세요.`,
+            code: "AI_LIMIT",
+            used,
+            limit,
+            planName: PLANS[plan].name,
+          },
+          { status: 429 }
+        );
+      }
+    }
+
     try {
       const aiItems = await searchWithAI(query);
       if (aiItems.length > 0) {

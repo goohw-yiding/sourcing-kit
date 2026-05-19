@@ -10,6 +10,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { calcLandedCost, formatKrw } from "@/lib/calc";
 import { SkeletonCard } from "@/components/SkeletonCard";
 import { detectMarketLocation } from "@/lib/location";
+import { AiLimitBanner } from "@/components/AiLimitBanner";
 
 interface NaverShopItem {
   title: string;
@@ -134,6 +135,7 @@ export default function SourcingPage() {
   const [marketLoading, setMarketLoading] = useState(false);
   const [marketResult, setMarketResult] = useState<MarketResult | null>(null);
   const [marketError, setMarketError] = useState<string | null>(null);
+  const [aiLimitInfo, setAiLimitInfo] = useState<{ used: number; limit: number; plan: string } | null>(null);
   const [targetMarginForm, setTargetMarginForm] = useState(40);
 
   // ── New state ──
@@ -672,13 +674,19 @@ export default function SourcingPage() {
       const res = await fetch("/api/market/analyze", { method: "POST", body: fd });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        setMarketError(err.error || `분석 오류 (${res.status})`);
+        if (res.status === 429 && err.code === "AI_LIMIT") {
+          setAiLimitInfo({ used: err.used, limit: err.limit, plan: err.plan ?? "free" });
+          setMarketError(null);
+        } else {
+          setMarketError(err.error || `분석 오류 (${res.status})`);
+        }
         return;
       }
       const data = await res.json();
       if (data.error) {
         setMarketError(data.error);
       } else {
+        setAiLimitInfo(null);
         setMarketResult(data);
       }
     } catch (e) {
@@ -2308,6 +2316,16 @@ export default function SourcingPage() {
 
   return (
     <div className="min-h-screen pb-28 bg-[#F4F6FA]">
+      {/* AI 한도 초과 배너 */}
+      {aiLimitInfo && (
+        <AiLimitBanner
+          used={aiLimitInfo.used}
+          limit={aiLimitInfo.limit}
+          plan={aiLimitInfo.plan}
+          onClose={() => setAiLimitInfo(null)}
+        />
+      )}
+
       <header className="text-white px-5 pt-14 pb-5 flex items-center gap-3 bg-[var(--primary)]">
         <Link href="/" className="p-1"><ArrowLeft className="w-5 h-5" /></Link>
         <h1 className="text-lg font-bold flex-1">소싱 수첩</h1>

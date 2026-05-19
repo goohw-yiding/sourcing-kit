@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Store, ClipboardList, Search, Calculator, ChevronRight, Palette, User, Check, Pencil, Globe, Plus, Share2, Eye, ChevronDown, ChevronUp, MapPin, Calendar, LogOut } from "lucide-react";
+import { Store, ClipboardList, Search, Calculator, ChevronRight, Palette, User, Check, Pencil, Globe, Plus, Share2, Eye, ChevronDown, ChevronUp, MapPin, Calendar, LogOut, Zap } from "lucide-react";
 import { useState, useEffect } from "react";
 import { signOut } from "next-auth/react";
 import { THEMES, ThemeId, applyTheme, getStoredTheme, getStoredUserName, setStoredUserName } from "@/lib/themes";
@@ -213,10 +213,12 @@ export default function MorePage() {
   }, []);
 
   const toolMenus = [
-    { href: "/suppliers", icon: Store,        label: t("more.suppliers"),   desc: t("more.suppliers_sub"), color: "bg-purple-100 text-purple-600" },
-    { href: "/orders",    icon: ClipboardList, label: t("more.orders"),      desc: t("more.orders_sub"),    color: "bg-gray-100 text-gray-600" },
-    { href: "/hs",        icon: Search,        label: t("nav.hs"),           desc: t("more.hs_sub"),        color: "bg-blue-100 text-blue-600" },
-    { href: "/calculator",icon: Calculator,    label: "원가 계산기",          desc: "CNY → KRW 빠른 계산",   color: "bg-orange-100 text-orange-600" },
+    { href: "/suppliers",             icon: Store,        label: t("more.suppliers"),   desc: t("more.suppliers_sub"), color: "bg-purple-100 text-purple-600" },
+    { href: "/orders",                icon: ClipboardList, label: t("more.orders"),      desc: t("more.orders_sub"),    color: "bg-gray-100 text-gray-600" },
+    { href: "/hs",                    icon: Search,        label: t("nav.hs"),           desc: t("more.hs_sub"),        color: "bg-blue-100 text-blue-600" },
+    { href: "/calculator",            icon: Calculator,    label: "원가 계산기",          desc: "CNY → KRW 빠른 계산",   color: "bg-orange-100 text-orange-600" },
+    { href: "/settings/subscription", icon: Zap,           label: "구독 관리",            desc: "플랜 · AI 사용량 · 결제 내역", color: "bg-green-100 text-green-600" },
+    { href: "/pricing",               icon: Zap,           label: "플랜 업그레이드",       desc: "무료 → 맛보기 → Pro",   color: "bg-[var(--primary)] text-white" },
   ];
 
   const handleThemeChange = (id: ThemeId) => { setTheme(id); applyTheme(id); };

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { getAuthTenantId } from "@/lib/getAuth";
+import { checkAndIncrementAiUsage, PLANS, getTenantPlan } from "@/lib/subscription";
 
 export const maxDuration = 60;
 
@@ -201,6 +203,30 @@ function calcPriceStats(items: NaverShopItem[]) {
 
 export async function POST(req: NextRequest) {
   try {
+    // ── 인증 확인 ──────────────────────────────────────────────
+    const auth = await getAuthTenantId();
+    if (auth instanceof NextResponse) return auth;
+    const { tenantId } = auth;
+
+    // ── 일일 AI 분석 횟수 체크 ─────────────────────────────────
+    const { allowed, used, limit } = await checkAndIncrementAiUsage(tenantId);
+    if (!allowed) {
+      const plan = await getTenantPlan(tenantId);
+      const planName = PLANS[plan].name;
+      const nextPlan = plan === "free" ? "맛보기(일 20회)" : "Pro(무제한)";
+      return NextResponse.json(
+        {
+          error: `오늘 AI 분석 횟수(${limit}회)를 모두 사용했습니다. ${nextPlan} 플랜으로 업그레이드하면 더 많이 분석할 수 있어요.`,
+          code: "AI_LIMIT",
+          used,
+          limit,
+          plan: planName,
+        },
+        { status: 429 }
+      );
+    }
+    // ──────────────────────────────────────────────────────────
+
     const formData = await req.formData();
     const image = formData.get("image") as File | null;
     const productName = formData.get("productName") as string | null;

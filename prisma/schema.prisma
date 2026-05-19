@@ -24,10 +24,12 @@ model Tenant {
 model Subscription {
   id              String    @id @default(cuid())
   tenantId        String    @unique
-  plan            String    @default("free")   // "free" | "pro"
-  status          String    @default("active") // "active" | "cancelled" | "past_due"
-  billingKey      String?   // 토스페이먼츠 빌링키
+  plan            String    @default("free")   // "free" | "taste" | "pro"
+  billingType     String    @default("free")   // "free" | "once" | "monthly" | "yearly"
+  status          String    @default("active") // "active" | "cancelled" | "past_due" | "expired"
+  billingKey      String?   // 토스페이먼츠 빌링키 (monthly/yearly)
   customerKey     String?   // 토스페이먼츠 고객키
+  expiresAt       DateTime? // taste 플랜 만료일
   nextBillingAt   DateTime?
   cancelledAt     DateTime?
   createdAt       DateTime  @default(now())
@@ -35,6 +37,15 @@ model Subscription {
 
   tenant          Tenant    @relation(fields: [tenantId], references: [id])
   payments        Payment[]
+}
+
+model AiUsageLog {
+  id        String   @id @default(cuid())
+  tenantId  String
+  date      String   // "YYYY-MM-DD" (KST 기준)
+  count     Int      @default(0)
+
+  @@unique([tenantId, date])
 }
 
 model Payment {
