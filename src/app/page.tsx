@@ -221,15 +221,15 @@ export default function HomePage() {
       {/* 빠른 소싱 시작 */}
       <div className="px-4 pt-5 pb-3">
         <Link href="/sourcing?new=1">
-          <div className="rounded-2xl px-5 py-4 flex items-center gap-4 active:scale-[0.98] transition-transform shadow-sm bg-[var(--primary)]">
-            <div className="w-11 h-11 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+          <div className="rounded-2xl px-5 py-4 flex items-center gap-4 active:scale-[0.98] transition-transform shadow-md" style={{ background: "linear-gradient(135deg, #F59E0B 0%, #D97706 100%)" }}>
+            <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: "rgba(0,0,0,0.12)" }}>
               <Camera className="w-6 h-6 text-white" />
             </div>
             <div className="flex-1">
               <div className="font-extrabold text-base text-white leading-tight">소싱 시작</div>
-              <div className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.65)" }}>사진 찍으면 AI가 원가까지 분석</div>
+              <div className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.75)" }}>사진 찍으면 AI가 원가까지 분석</div>
             </div>
-            <span className="text-white/40 text-xl leading-none">›</span>
+            <span className="text-white/60 text-xl leading-none">›</span>
           </div>
         </Link>
       </div>
