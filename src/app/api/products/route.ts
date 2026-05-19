@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { calcLandedCost } from "@/lib/calc";
 import { getAuthTenantId } from "@/lib/getAuth";
+import { getTenantPlan, PLANS } from "@/lib/subscription";
 
 export async function GET() {
   const auth = await getAuthTenantId();
@@ -20,6 +21,21 @@ export async function POST(req: NextRequest) {
     const auth = await getAuthTenantId();
     if (auth instanceof NextResponse) return auth;
     const { tenantId } = auth;
+
+    // ── 무료 플랜 한도 체크 ──────────────────────────────
+    const plan = await getTenantPlan(tenantId);
+    const limit = PLANS[plan].productLimit;
+    if (isFinite(limit)) {
+      const count = await prisma.product.count({ where: { tenantId } });
+      if (count >= limit) {
+        return NextResponse.json(
+          { error: `무료 플랜은 상품을 최대 ${limit}개까지 등록할 수 있습니다. Pro 플랜으로 업그레이드하세요.`, code: "PLAN_LIMIT" },
+          { status: 403 }
+        );
+      }
+    }
+    // ─────────────────────────────────────────────────────
+
     const body = await req.json();
 
     // 숫자 파싱 (form이 string으로 전송할 수 있음)
