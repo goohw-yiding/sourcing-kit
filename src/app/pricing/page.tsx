@@ -340,6 +340,58 @@ export default function PricingPage() {
           Pro 구독은 언제든지 취소 가능하며 취소 후에도 해당 월 말까지 이용 가능합니다.
         </p>
 
+        {/* 서비스 제공기간 */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-4 space-y-2">
+          <p className="text-xs text-gray-600 font-semibold">📅 서비스 제공기간</p>
+          <ul className="space-y-1.5 text-xs text-gray-500 leading-relaxed">
+            <li className="flex gap-2">
+              <span className="font-medium text-gray-600 shrink-0 w-20">무료 플랜</span>
+              <span>회원 탈퇴 시까지 무기한 제공</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="font-medium text-gray-600 shrink-0 w-20">맛보기</span>
+              <span>결제 완료일로부터 30일</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="font-medium text-gray-600 shrink-0 w-20">Pro 월구독</span>
+              <span>결제일로부터 다음 결제일 전날까지 (매월 자동 갱신)</span>
+            </li>
+            <li className="flex gap-2">
+              <span className="font-medium text-gray-600 shrink-0 w-20">Pro 연구독</span>
+              <span>결제 완료일로부터 365일 (1년)</span>
+            </li>
+          </ul>
+        </div>
+
+        {/* 환불 및 취소 정책 */}
+        <div className="bg-white rounded-2xl border border-gray-100 p-4 space-y-2">
+          <p className="text-xs text-gray-600 font-semibold">💳 환불 및 취소 정책</p>
+          <div className="space-y-3 text-xs text-gray-500 leading-relaxed">
+            <div>
+              <p className="font-medium text-gray-600 mb-1">맛보기 (1회 단건결제)</p>
+              <ul className="space-y-1 list-disc list-inside pl-1">
+                <li>서비스 이용 시작 전 취소 요청 시: 전액 환불</li>
+                <li>서비스 이용 시작 후: 디지털 콘텐츠 특성상 환불 불가<br/>
+                  <span className="text-gray-400">(전자상거래법 제17조 제2항 제5호 적용)</span></li>
+                <li>서비스 결함·오류로 인한 경우: 전액 환불</li>
+              </ul>
+            </div>
+            <div>
+              <p className="font-medium text-gray-600 mb-1">Pro 구독 (정기결제)</p>
+              <ul className="space-y-1 list-disc list-inside pl-1">
+                <li>구독 취소는 언제든지 가능 (즉시 해지)</li>
+                <li>취소 후 해당 결제 기간 종료일까지 서비스 이용 가능</li>
+                <li>이미 결제된 구독료는 잔여 기간에 관계없이 환불되지 않음</li>
+                <li>서비스 결함·오류로 인한 경우: 잔여 기간 일할 환불</li>
+              </ul>
+            </div>
+            <p className="text-gray-400 text-[11px]">
+              환불 요청: support@sourcing-kit.kr · 010-2623-6907<br/>
+              처리 기간: 영업일 기준 3~5일 이내
+            </p>
+          </div>
+        </div>
+
         {/* 사업자 정보 */}
         <div className="border-t border-gray-100 pt-5 pb-8 space-y-1.5 text-[11px] text-gray-400 leading-relaxed">
           <p className="font-semibold text-gray-500 text-xs mb-2">사업자 정보</p>
