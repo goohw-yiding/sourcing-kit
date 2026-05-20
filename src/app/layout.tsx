@@ -8,6 +8,13 @@ export const metadata: Metadata = {
   title: "소싱킷 | 무역 소싱 관리",
   description: "이우 무역상을 위한 소싱 원가계산 앱",
   manifest: "/manifest.json",
+  icons: {
+    apple: "/icons/icon-192.png",
+    icon: [
+      { url: "/icons/icon-192.png", sizes: "192x192" },
+      { url: "/icons/icon-512.png", sizes: "512x512" },
+    ],
+  },
 };
 
 export const viewport: Viewport = {
