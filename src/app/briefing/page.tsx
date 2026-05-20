@@ -123,6 +123,7 @@ export default function BriefingPage() {
   const [newsLoading, setNewsLoading] = useState(false);
   const [newsError, setNewsError] = useState(false);
   const [newsUpdatedAt, setNewsUpdatedAt] = useState("");
+  const [showOrig, setShowOrig] = useState(false); // 원문 토글
 
   // 환율 트렌드
   const [exchangeData, setExchangeData] = useState<ExchangeHistoryResponse | null>(null);
@@ -271,24 +272,31 @@ export default function BriefingPage() {
                   {selectedRegion.flag} {selectedRegion.label} 최신 뉴스
                 </p>
                 {selectedRegion.langBadge === "中文" && (
-                  <span className="text-[9px] font-bold bg-red-100 text-red-500 px-1.5 py-0.5 rounded-full">
-                    中文
+                  <span className="text-[9px] font-bold bg-blue-100 text-blue-500 px-1.5 py-0.5 rounded-full">
+                    AI 번역
                   </span>
                 )}
               </div>
-              <button onClick={() => loadNews(regionId)} disabled={newsLoading}
-                className="flex items-center gap-1 text-xs text-gray-400 active:opacity-60">
-                <RefreshCw className={`w-3 h-3 ${newsLoading ? "animate-spin" : ""}`} />
-                새로고침
-              </button>
-            </div>
-
-            {/* 중문 뉴스 안내 */}
-            {selectedRegion.langBadge === "中文" && !newsLoading && news.length > 0 && (
-              <div className="bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 mb-3 text-[11px] text-amber-700">
-                💡 현지 중국어 뉴스입니다. 번역이 필요하면 기사를 클릭 후 브라우저 번역을 이용하세요.
+              <div className="flex items-center gap-2">
+                {/* 원문 토글 */}
+                {selectedRegion.langBadge === "中文" && news.length > 0 && (
+                  <button
+                    onClick={() => setShowOrig(v => !v)}
+                    className={`text-[10px] font-bold px-2 py-1 rounded-full border transition-all ${
+                      showOrig
+                        ? "bg-gray-900 text-white border-gray-900"
+                        : "bg-white text-gray-400 border-gray-200"
+                    }`}
+                  >
+                    {showOrig ? "한국어 보기" : "中文 원문"}
+                  </button>
+                )}
+                <button onClick={() => loadNews(regionId)} disabled={newsLoading}
+                  className="flex items-center gap-1 text-xs text-gray-400 active:opacity-60">
+                  <RefreshCw className={`w-3 h-3 ${newsLoading ? "animate-spin" : ""}`} />
+                </button>
               </div>
-            )}
+            </div>
 
             {newsLoading && (
               <div className="space-y-3">
@@ -327,7 +335,13 @@ export default function BriefingPage() {
                     className="block bg-white rounded-2xl p-4 border border-gray-100 shadow-sm active:bg-gray-50 transition-colors">
                     <div className="flex items-start gap-2">
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-bold text-gray-900 leading-snug line-clamp-2">{item.title}</p>
+                        <p className="text-sm font-bold text-gray-900 leading-snug line-clamp-2">
+                          {showOrig && item.titleOrig ? item.titleOrig : item.title}
+                        </p>
+                        {/* 번역 모드일 때 원문 작게 표시 */}
+                        {!showOrig && item.titleOrig && (
+                          <p className="text-[10px] text-gray-300 mt-0.5 line-clamp-1">{item.titleOrig}</p>
+                        )}
                         {item.description && (
                           <p className="text-xs text-gray-500 mt-1.5 leading-relaxed line-clamp-2">{item.description}</p>
                         )}
