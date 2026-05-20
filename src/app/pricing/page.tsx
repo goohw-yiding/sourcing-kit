@@ -339,6 +339,17 @@ export default function PricingPage() {
           결제는 토스페이먼츠를 통해 안전하게 처리됩니다.
           Pro 구독은 언제든지 취소 가능하며 취소 후에도 해당 월 말까지 이용 가능합니다.
         </p>
+
+        {/* 사업자 정보 */}
+        <div className="border-t border-gray-100 pt-5 pb-8 space-y-1.5 text-[11px] text-gray-400 leading-relaxed">
+          <p className="font-semibold text-gray-500 text-xs mb-2">사업자 정보</p>
+          <p><span className="font-medium text-gray-500">상호명</span> · 이딩컴퍼니</p>
+          <p><span className="font-medium text-gray-500">대표자</span> · 구희완</p>
+          <p><span className="font-medium text-gray-500">사업자등록번호</span> · 210-29-50637</p>
+          <p><span className="font-medium text-gray-500">사업장 주소</span> · 경기도 고양시 덕양구 청초로 10 A1723호</p>
+          <p><span className="font-medium text-gray-500">대표번호</span> · 010-2623-6907</p>
+          <p className="pt-1 text-[10px]">© 2025 이딩컴퍼니. All rights reserved.</p>
+        </div>
       </div>
     </div>
   );
