@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
     ]);
 
     if (buffer.length > 0) {
-      return new NextResponse(buffer, {
+      return new NextResponse(new Uint8Array(buffer), {
         headers: {
           "Content-Type": "audio/mpeg",
           "Cache-Control": "public, max-age=86400",

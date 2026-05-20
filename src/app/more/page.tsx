@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Store, ClipboardList, Search, Calculator, ChevronRight, Palette, User, Check, Pencil, Globe, Plus, Share2, Eye, ChevronDown, ChevronUp, MapPin, Calendar, LogOut, Zap } from "lucide-react";
+import { Store, ClipboardList, Search, Calculator, ChevronRight, Palette, User, Check, Pencil, Globe, Plus, Share2, Eye, ChevronDown, ChevronUp, MapPin, Calendar, LogOut, Zap, Newspaper } from "lucide-react";
 import { useState, useEffect } from "react";
 import { signOut } from "next-auth/react";
 import { THEMES, ThemeId, applyTheme, getStoredTheme, getStoredUserName, setStoredUserName } from "@/lib/themes";
@@ -213,6 +213,7 @@ export default function MorePage() {
   }, []);
 
   const toolMenus = [
+    { href: "/briefing",              icon: Newspaper,     label: "소싱 브리핑",           desc: "뉴스 · 환율 트렌드 · 이우 신상품", color: "bg-blue-100 text-blue-600" },
     { href: "/suppliers",             icon: Store,        label: t("more.suppliers"),   desc: t("more.suppliers_sub"), color: "bg-purple-100 text-purple-600" },
     { href: "/orders",                icon: ClipboardList, label: t("more.orders"),      desc: t("more.orders_sub"),    color: "bg-gray-100 text-gray-600" },
     { href: "/hs",                    icon: Search,        label: t("nav.hs"),           desc: t("more.hs_sub"),        color: "bg-blue-100 text-blue-600" },
