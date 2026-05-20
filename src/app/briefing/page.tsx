@@ -9,11 +9,11 @@ import type { YiwuProductsResponse, YiwuProductItem } from "@/app/api/briefing/p
 
 // ── 지역 목록 ────────────────────────────────────────────
 const REGIONS = [
-  { id: "yiwu",      flag: "🇨🇳", label: "이우" },
-  { id: "guangzhou", flag: "🇨🇳", label: "광저우" },
-  { id: "shenzhen",  flag: "🇨🇳", label: "선전" },
-  { id: "shanghai",  flag: "🇨🇳", label: "상하이" },
-  { id: "korea",     flag: "🇰🇷", label: "국내" },
+  { id: "yiwu",      flag: "🇨🇳", label: "이우",   langBadge: "中文" },
+  { id: "guangzhou", flag: "🇨🇳", label: "광저우", langBadge: "中文" },
+  { id: "shenzhen",  flag: "🇨🇳", label: "선전",   langBadge: "中文" },
+  { id: "shanghai",  flag: "🇨🇳", label: "상하이", langBadge: "中文" },
+  { id: "korea",     flag: "🇰🇷", label: "국내",   langBadge: "한국어" },
 ];
 
 const PERIODS = [
@@ -266,15 +266,29 @@ export default function BriefingPage() {
 
             {/* 헤더 */}
             <div className="flex items-center justify-between mb-3">
-              <p className="text-xs font-semibold text-gray-500">
-                {selectedRegion.flag} {selectedRegion.label} 관련 뉴스
-              </p>
+              <div className="flex items-center gap-2">
+                <p className="text-xs font-semibold text-gray-500">
+                  {selectedRegion.flag} {selectedRegion.label} 최신 뉴스
+                </p>
+                {selectedRegion.langBadge === "中文" && (
+                  <span className="text-[9px] font-bold bg-red-100 text-red-500 px-1.5 py-0.5 rounded-full">
+                    中文
+                  </span>
+                )}
+              </div>
               <button onClick={() => loadNews(regionId)} disabled={newsLoading}
                 className="flex items-center gap-1 text-xs text-gray-400 active:opacity-60">
                 <RefreshCw className={`w-3 h-3 ${newsLoading ? "animate-spin" : ""}`} />
                 새로고침
               </button>
             </div>
+
+            {/* 중문 뉴스 안내 */}
+            {selectedRegion.langBadge === "中文" && !newsLoading && news.length > 0 && (
+              <div className="bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 mb-3 text-[11px] text-amber-700">
+                💡 현지 중국어 뉴스입니다. 번역이 필요하면 기사를 클릭 후 브라우저 번역을 이용하세요.
+              </div>
+            )}
 
             {newsLoading && (
               <div className="space-y-3">
