@@ -197,6 +197,19 @@ model Waitlist {
   createdAt DateTime @default(now())
 }
 
+model GiftCode {
+  id          String    @id @default(cuid())
+  code        String    @unique           // 예: GIFT-X7K2
+  plan        String    @default("pro")   // "taste" | "pro"
+  memo        String?                     // 관리자 메모 (누구에게 줬는지)
+  maxUses     Int       @default(1)       // 최대 사용 횟수
+  usedCount   Int       @default(0)       // 현재 사용 횟수
+  expiresAt   DateTime?                   // 만료일 (null = 무기한)
+  usedByTenants String[] @default([])    // 사용한 tenantId 목록
+  createdAt   DateTime  @default(now())
+  createdBy   String?                     // 관리자 이메일
+}
+
 model Order {
   id              String    @id @default(cuid())
   tenantId        String

@@ -415,7 +415,19 @@ export default function MorePage() {
         </div>
 
         {/* ── 로그아웃 ── */}
-        <div>
+        <div className="space-y-2">
+          <Link href="/admin">
+            <div className="w-full flex items-center gap-3 px-4 py-4 bg-white rounded-2xl shadow-sm border border-gray-100 active:bg-gray-50 transition-colors">
+              <div className="w-11 h-11 rounded-2xl bg-gray-900 text-white flex items-center justify-center shrink-0 text-lg">
+                🔐
+              </div>
+              <div className="flex-1">
+                <div className="font-semibold text-gray-900 text-sm">관리자 페이지</div>
+                <div className="text-xs text-gray-400 mt-0.5">초대 코드 생성 · 관리자만 접근 가능</div>
+              </div>
+              <ChevronRight className="w-4 h-4 text-gray-300" />
+            </div>
+          </Link>
           <button
             onClick={() => signOut({ callbackUrl: "/login" })}
             className="w-full flex items-center gap-3 px-4 py-4 bg-white rounded-2xl shadow-sm border border-gray-100 text-left active:bg-gray-50 transition-colors"

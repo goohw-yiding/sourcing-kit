@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Zap, Clock, BarChart2, Loader2, AlertTriangle } from "lucide-react";
+import { ArrowLeft, Zap, Clock, BarChart2, Loader2, AlertTriangle, Gift } from "lucide-react";
 import Link from "next/link";
 
 interface SubData {
@@ -47,6 +47,11 @@ export default function SubscriptionPage() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [cancelDone, setCancelDone] = useState(false);
 
+  // 초대 코드
+  const [giftCode, setGiftCode]       = useState("");
+  const [giftLoading, setGiftLoading] = useState(false);
+  const [giftResult, setGiftResult]   = useState<{ ok: boolean; message: string } | null>(null);
+
   useEffect(() => {
     fetch("/api/subscription")
       .then((r) => r.json())
@@ -54,6 +59,33 @@ export default function SubscriptionPage() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, []);
+
+  const handleGiftCode = async () => {
+    if (!giftCode.trim()) return;
+    setGiftLoading(true);
+    setGiftResult(null);
+    try {
+      const res = await fetch("/api/gift-code/redeem", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: giftCode }),
+      });
+      const d = await res.json() as { ok?: boolean; message?: string; error?: string };
+      if (res.ok && d.ok) {
+        setGiftResult({ ok: true, message: d.message ?? "활성화 완료!" });
+        setGiftCode("");
+        // 구독 정보 갱신
+        const fresh = await fetch("/api/subscription").then(r => r.json());
+        setData(fresh);
+      } else {
+        setGiftResult({ ok: false, message: d.error ?? "코드 사용 실패" });
+      }
+    } catch {
+      setGiftResult({ ok: false, message: "네트워크 오류가 발생했습니다" });
+    } finally {
+      setGiftLoading(false);
+    }
+  };
 
   const handleCancel = async () => {
     setCancelling(true);
@@ -223,6 +255,46 @@ export default function SubscriptionPage() {
                 </div>
               </div>
             )}
+
+            {/* ── 초대 코드 입력 ── */}
+            <div className="bg-white rounded-2xl border border-gray-100 p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Gift className="w-4 h-4 text-purple-500" />
+                <p className="text-sm font-bold text-gray-700">초대 코드 입력</p>
+              </div>
+              <p className="text-xs text-gray-400 mb-3">
+                받으신 초대 코드를 입력하면 Pro 플랜이 무료로 활성화됩니다.
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={giftCode}
+                  onChange={e => setGiftCode(e.target.value.toUpperCase())}
+                  onKeyDown={e => e.key === "Enter" && handleGiftCode()}
+                  placeholder="GIFT-XXXX-XXXX"
+                  className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-mono tracking-widest focus:outline-none focus:border-purple-400 uppercase"
+                  maxLength={14}
+                />
+                <button
+                  onClick={handleGiftCode}
+                  disabled={giftLoading || !giftCode.trim()}
+                  className="px-4 py-2.5 bg-purple-600 text-white rounded-xl text-sm font-bold disabled:opacity-40 flex items-center gap-1.5"
+                >
+                  {giftLoading
+                    ? <Loader2 className="w-4 h-4 animate-spin" />
+                    : "적용"}
+                </button>
+              </div>
+              {giftResult && (
+                <div className={`mt-2.5 text-sm font-medium px-3 py-2 rounded-xl ${
+                  giftResult.ok
+                    ? "bg-green-50 text-green-700 border border-green-100"
+                    : "bg-red-50 text-red-600 border border-red-100"
+                }`}>
+                  {giftResult.ok ? "🎉 " : "⚠️ "}{giftResult.message}
+                </div>
+              )}
+            </div>
 
             {/* 취소 버튼 (Pro 구독 중이고 아직 취소 안 한 경우만) */}
             {data.plan === "pro" && data.status === "active" && !cancelDone && (
