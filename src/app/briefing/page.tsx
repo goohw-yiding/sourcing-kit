@@ -24,29 +24,30 @@ const PERIODS = [
 ];
 
 // ── 미니 라인차트 (SVG) ─────────────────────────────────
-function MiniLineChart({ data, color = "#3B82F6", height = 80 }: {
+function MiniLineChart({ data, field = "cny", height = 80, gradId }: {
   data: ExchangeDataPoint[];
-  color?: string;
+  field?: "cny" | "usd";
   height?: number;
+  gradId?: string;
 }) {
   if (data.length < 2) return null;
 
-  const values = data.map(d => d.cny);
+  const values = data.map(d => d[field]);
   const min = Math.min(...values);
   const max = Math.max(...values);
   const range = max - min || 1;
   const W = 300;
   const H = height;
   const pad = 4;
+  const gId = gradId ?? `chartGrad_${field}`;
 
   const points = data.map((d, i) => {
     const x = pad + (i / (data.length - 1)) * (W - pad * 2);
-    const y = H - pad - ((d.cny - min) / range) * (H - pad * 2);
+    const y = H - pad - ((d[field] - min) / range) * (H - pad * 2);
     return `${x},${y}`;
   });
 
   const polyline = points.join(" ");
-  // 그라디언트 영역
   const area = `M${points[0]} L${points.join(" L")} L${pad + (W - pad * 2)},${H} L${pad},${H} Z`;
 
   const isUp = values[values.length - 1] >= values[0];
@@ -55,12 +56,12 @@ function MiniLineChart({ data, color = "#3B82F6", height = 80 }: {
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height }}>
       <defs>
-        <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id={gId} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={lineColor} stopOpacity={0.15} />
           <stop offset="100%" stopColor={lineColor} stopOpacity={0} />
         </linearGradient>
       </defs>
-      <path d={area} fill="url(#chartGrad)" />
+      <path d={area} fill={`url(#${gId})`} />
       <polyline
         points={polyline}
         fill="none"
@@ -69,9 +70,7 @@ function MiniLineChart({ data, color = "#3B82F6", height = 80 }: {
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      {/* 첫 점 */}
       <circle cx={points[0].split(",")[0]} cy={points[0].split(",")[1]} r="3" fill={lineColor} opacity={0.5} />
-      {/* 마지막 점 */}
       <circle
         cx={points[points.length - 1].split(",")[0]}
         cy={points[points.length - 1].split(",")[1]}
@@ -79,6 +78,25 @@ function MiniLineChart({ data, color = "#3B82F6", height = 80 }: {
         fill={lineColor}
       />
     </svg>
+  );
+}
+
+// ── 환율 변동 배지 ────────────────────────────────────────
+function ChangeBadge({ pct }: { pct: number }) {
+  if (pct > 0) return (
+    <span className="flex items-center gap-0.5 text-xs font-bold text-red-500">
+      <TrendingUp className="w-3 h-3" />+{Math.abs(pct).toFixed(2)}%
+    </span>
+  );
+  if (pct < 0) return (
+    <span className="flex items-center gap-0.5 text-xs font-bold text-green-500">
+      <TrendingDown className="w-3 h-3" />-{Math.abs(pct).toFixed(2)}%
+    </span>
+  );
+  return (
+    <span className="flex items-center gap-0.5 text-xs font-bold text-gray-400">
+      <Minus className="w-3 h-3" />0%
+    </span>
   );
 }
 
@@ -395,9 +413,9 @@ export default function BriefingPage() {
 
             {!exchangeLoading && exchangeData && (
               <div className="space-y-3">
-                {/* CNY 차트 카드 */}
+                {/* CNY 카드 */}
                 <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
-                  <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center justify-between mb-0.5">
                     <div className="flex items-center gap-2">
                       <span className="text-base">🇨🇳</span>
                       <span className="text-sm font-bold text-gray-900">위안화 (CNY)</span>
@@ -406,34 +424,32 @@ export default function BriefingPage() {
                       <span className="text-lg font-extrabold text-gray-900">
                         ₩{exchangeData.latestCny.toFixed(1)}
                       </span>
-                      {exchangeData.changePercent.cny > 0 ? (
-                        <span className="flex items-center gap-0.5 text-xs font-bold text-red-500">
-                          <TrendingUp className="w-3 h-3" />
-                          +{Math.abs(exchangeData.changePercent.cny).toFixed(2)}%
-                        </span>
-                      ) : exchangeData.changePercent.cny < 0 ? (
-                        <span className="flex items-center gap-0.5 text-xs font-bold text-green-500">
-                          <TrendingDown className="w-3 h-3" />
-                          -{Math.abs(exchangeData.changePercent.cny).toFixed(2)}%
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-0.5 text-xs font-bold text-gray-400">
-                          <Minus className="w-3 h-3" /> 0%
-                        </span>
-                      )}
+                      <ChangeBadge pct={exchangeData.changePercent.cny} />
                     </div>
                   </div>
                   <p className="text-[10px] text-gray-400 mb-3">1위안 = ? 원 · 매매기준율</p>
-                  <MiniLineChart data={exchangeData.data} height={80} />
-                  <div className="flex justify-between mt-1">
+                  <MiniLineChart data={exchangeData.data} field="cny" height={72} gradId="cnyGrad" />
+                  <div className="flex justify-between mt-1 mb-3">
                     <span className="text-[9px] text-gray-300">{exchangeData.data[0]?.date}</span>
                     <span className="text-[9px] text-gray-300">{exchangeData.data[exchangeData.data.length - 1]?.date}</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    {[
+                      { label: "시작", value: `₩${exchangeData.data[0]?.cny.toFixed(1)}` },
+                      { label: "현재", value: `₩${exchangeData.latestCny.toFixed(1)}` },
+                      { label: "변동", value: `${exchangeData.changePercent.cny >= 0 ? "+" : ""}${exchangeData.changePercent.cny.toFixed(2)}%` },
+                    ].map(item => (
+                      <div key={item.label} className="bg-gray-50 rounded-xl px-2 py-2">
+                        <div className="text-[10px] text-gray-400 mb-0.5">{item.label}</div>
+                        <div className="text-xs font-bold text-gray-800">{item.value}</div>
+                      </div>
+                    ))}
                   </div>
                 </div>
 
                 {/* USD 카드 */}
                 <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
-                  <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center justify-between mb-0.5">
                     <div className="flex items-center gap-2">
                       <span className="text-base">🇺🇸</span>
                       <span className="text-sm font-bold text-gray-900">달러 (USD)</span>
@@ -442,26 +458,16 @@ export default function BriefingPage() {
                       <span className="text-lg font-extrabold text-gray-900">
                         ₩{exchangeData.latestUsd.toLocaleString()}
                       </span>
-                      {exchangeData.changePercent.usd > 0 ? (
-                        <span className="flex items-center gap-0.5 text-xs font-bold text-red-500">
-                          <TrendingUp className="w-3 h-3" />
-                          +{Math.abs(exchangeData.changePercent.usd).toFixed(2)}%
-                        </span>
-                      ) : exchangeData.changePercent.usd < 0 ? (
-                        <span className="flex items-center gap-0.5 text-xs font-bold text-green-500">
-                          <TrendingDown className="w-3 h-3" />
-                          -{Math.abs(exchangeData.changePercent.usd).toFixed(2)}%
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-0.5 text-xs font-bold text-gray-400">
-                          <Minus className="w-3 h-3" /> 0%
-                        </span>
-                      )}
+                      <ChangeBadge pct={exchangeData.changePercent.usd} />
                     </div>
                   </div>
-                  <p className="text-[10px] text-gray-400 mb-2">1달러 = ? 원 · 매매기준율</p>
-                  {/* USD 간단 막대 표시 */}
-                  <div className="grid grid-cols-3 gap-2 mt-2 text-center">
+                  <p className="text-[10px] text-gray-400 mb-3">1달러 = ? 원 · 매매기준율</p>
+                  <MiniLineChart data={exchangeData.data} field="usd" height={72} gradId="usdGrad" />
+                  <div className="flex justify-between mt-1 mb-3">
+                    <span className="text-[9px] text-gray-300">{exchangeData.data[0]?.date}</span>
+                    <span className="text-[9px] text-gray-300">{exchangeData.data[exchangeData.data.length - 1]?.date}</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-center">
                     {[
                       { label: "시작", value: `₩${exchangeData.data[0]?.usd.toLocaleString()}` },
                       { label: "현재", value: `₩${exchangeData.latestUsd.toLocaleString()}` },
