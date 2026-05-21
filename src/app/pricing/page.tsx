@@ -386,7 +386,7 @@ export default function PricingPage() {
               </ul>
             </div>
             <p className="text-gray-400 text-[11px]">
-              환불 요청: support@sourcing-kit.kr · 010-2623-6907<br/>
+              환불 요청: goohw593@gmail.com · 010-2623-6907<br/>
               처리 기간: 영업일 기준 3~5일 이내
             </p>
           </div>
