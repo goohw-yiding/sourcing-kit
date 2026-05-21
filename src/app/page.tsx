@@ -264,8 +264,9 @@ export default function HomePage() {
         </Link>
 
         {/* ── 보조: 소싱 브리핑 ── */}
-        <Link href="/briefing" className="mt-2 block">
-          <div className="rounded-2xl px-5 py-3.5 flex items-center gap-3.5 active:scale-[0.98] transition-transform shadow-sm"
+        <Link href="/briefing" className="mt-2 block cursor-pointer select-none">
+          <div className="rounded-2xl px-5 py-3.5 flex items-center gap-3.5 shadow-sm transition-all duration-150
+            active:scale-[0.97] active:brightness-90"
             style={{ background: "linear-gradient(135deg, #263238 0%, #37474F 100%)" }}>
             <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
               style={{ background: "rgba(255,255,255,0.08)" }}>
@@ -275,7 +276,7 @@ export default function HomePage() {
               <div className="font-bold text-sm text-white leading-tight">소싱 브리핑</div>
               <div className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.5)" }}>뉴스 · 환율 트렌드 · 이우 신상품</div>
             </div>
-            <span className="text-white/40 text-lg">›</span>
+            <span className="text-white/60 text-lg transition-transform duration-150 active:translate-x-0.5">›</span>
           </div>
         </Link>
 
