@@ -220,32 +220,53 @@ export default function HomePage() {
 
       {/* 빠른 소싱 시작 + 브리핑 */}
       <div className="px-4 pt-5 pb-3 space-y-2.5">
+
+        {/* ── 히어로: 소싱 시작 ── */}
         <Link href="/sourcing?new=1">
-          <div className="rounded-2xl px-5 py-4 flex items-center gap-4 active:scale-[0.98] transition-transform shadow-md" style={{ background: "linear-gradient(135deg, #F59E0B 0%, #D97706 100%)" }}>
-            <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: "rgba(0,0,0,0.12)" }}>
-              <Camera className="w-6 h-6 text-white" />
+          <div className="rounded-3xl px-6 py-7 active:scale-[0.98] transition-transform shadow-lg relative overflow-hidden"
+            style={{ background: "linear-gradient(135deg, #FF7043 0%, #F4511E 60%, #E53935 100%)" }}>
+            {/* 배경 장식 원 */}
+            <div className="absolute -right-8 -top-8 w-40 h-40 rounded-full" style={{ background: "rgba(255,255,255,0.07)" }} />
+            <div className="absolute -right-2 top-12 w-24 h-24 rounded-full" style={{ background: "rgba(255,255,255,0.05)" }} />
+
+            <div className="flex items-center gap-5">
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 shadow-inner"
+                style={{ background: "rgba(0,0,0,0.18)" }}>
+                <Camera className="w-9 h-9 text-white" />
+              </div>
+              <div className="flex-1">
+                <div className="font-black text-2xl text-white leading-tight tracking-tight">소싱 시작</div>
+                <div className="text-sm mt-1.5 font-medium" style={{ color: "rgba(255,255,255,0.82)" }}>
+                  사진 찍으면 AI가 원가까지 분석
+                </div>
+              </div>
             </div>
-            <div className="flex-1">
-              <div className="font-extrabold text-base text-white leading-tight">소싱 시작</div>
-              <div className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.75)" }}>사진 찍으면 AI가 원가까지 분석</div>
+
+            <div className="mt-5 flex items-center gap-1.5">
+              <span className="text-xs font-bold tracking-wide" style={{ color: "rgba(255,255,255,0.65)" }}>
+                지금 바로 시작하기
+              </span>
+              <span className="text-white text-sm font-bold">→</span>
             </div>
-            <span className="text-white/60 text-xl leading-none">›</span>
           </div>
         </Link>
 
-        {/* 소싱 브리핑 */}
+        {/* ── 보조: 소싱 브리핑 ── */}
         <Link href="/briefing">
-          <div className="rounded-2xl px-5 py-4 flex items-center gap-4 active:scale-[0.98] transition-transform shadow-md" style={{ background: "linear-gradient(135deg, #1E3A5F 0%, #2D5A9B 100%)" }}>
-            <div className="w-11 h-11 rounded-xl flex items-center justify-center shrink-0" style={{ background: "rgba(0,0,0,0.12)" }}>
-              <span className="text-2xl">📰</span>
+          <div className="rounded-2xl px-5 py-3.5 flex items-center gap-3.5 active:scale-[0.98] transition-transform shadow-sm"
+            style={{ background: "linear-gradient(135deg, #263238 0%, #37474F 100%)" }}>
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+              style={{ background: "rgba(255,255,255,0.08)" }}>
+              <span className="text-lg">📰</span>
             </div>
             <div className="flex-1">
-              <div className="font-extrabold text-base text-white leading-tight">소싱 브리핑</div>
-              <div className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.65)" }}>뉴스 · 환율 트렌드 · 이우 신상품</div>
+              <div className="font-bold text-sm text-white leading-tight">소싱 브리핑</div>
+              <div className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.5)" }}>뉴스 · 환율 트렌드 · 이우 신상품</div>
             </div>
-            <span className="text-white/60 text-xl leading-none">›</span>
+            <span className="text-white/40 text-lg">›</span>
           </div>
         </Link>
+
       </div>
 
       {/* 웨이트리스트 배너 */}
