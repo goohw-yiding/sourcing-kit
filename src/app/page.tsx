@@ -146,72 +146,84 @@ export default function HomePage() {
         <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.6)" }}>{t("home.subtitle")}</p>
 
         {/* 환율 + 현황 */}
-        <div className="mt-5 space-y-3">
-          {/* 멀티 환율 */}
-          <div className="rounded-2xl px-4 py-3" style={{ background: "rgba(255,255,255,0.1)" }}>
-            <div className="flex items-center justify-between mb-2.5">
-              <div>
-                <p className="text-xs font-medium leading-tight" style={{ color: "rgba(255,255,255,0.7)" }}>
-                  실시간 환율
-                </p>
-                <p className="text-[10px] mt-0.5 leading-tight" style={{ color: "rgba(255,255,255,0.4)" }}>
-                  위안: 전신환매도율 · 기타: 매매기준율
-                </p>
+        <div className="mt-5 space-y-2.5">
+
+          {/* ── 환율 카드 ── */}
+          <div className="rounded-2xl overflow-hidden" style={{ background: "rgba(255,255,255,0.10)" }}>
+            <div className="px-4 pt-3.5 pb-3.5">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-[10px] font-bold tracking-widest uppercase" style={{ color: "rgba(255,255,255,0.5)" }}>실시간 환율</span>
+                {rates?.date && (
+                  <span className="text-[9px]" style={{ color: "rgba(255,255,255,0.28)" }}>{rates.date}</span>
+                )}
               </div>
-              {rates?.date && (
-                <p className="text-[10px] shrink-0" style={{ color: "rgba(255,255,255,0.35)" }}>{rates.date}</p>
+
+              {rates ? (
+                <div className="flex gap-2.5">
+                  {/* CNY — 왼쪽 크게 */}
+                  <div className="rounded-xl px-3 py-2.5 flex-1" style={{ background: "rgba(255,255,255,0.10)" }}>
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <span className="text-sm">🇨🇳</span>
+                      <span className="text-[10px] font-semibold" style={{ color: "rgba(255,255,255,0.5)" }}>위안 CNY</span>
+                    </div>
+                    <div className="text-[30px] font-black text-white leading-none tracking-tight">
+                      {currencies[0]?.value.toFixed(1)}
+                    </div>
+                    <div className="text-[9px] mt-1.5 font-medium px-1.5 py-0.5 rounded-full inline-block"
+                      style={{ background: "rgba(255,255,255,0.12)", color: "rgba(255,255,255,0.45)" }}>
+                      전신환매도
+                    </div>
+                  </div>
+
+                  {/* USD · JPY · VND — 오른쪽 compact */}
+                  <div className="flex flex-col gap-1.5 justify-center">
+                    {currencies.slice(1).map(c => (
+                      <div key={c.code} className="flex items-center gap-2 rounded-xl px-2.5 py-1.5"
+                        style={{ background: "rgba(255,255,255,0.07)" }}>
+                        <span className="text-base leading-none">{c.flag}</span>
+                        <div>
+                          <div className="text-sm font-bold text-white leading-none">
+                            {c.value >= 1000
+                              ? c.value.toLocaleString("ko-KR", { maximumFractionDigits: 0 })
+                              : c.value.toFixed(c.decimals)}
+                          </div>
+                          <div className="text-[9px] mt-0.5 leading-none" style={{ color: "rgba(255,255,255,0.38)" }}>
+                            {c.unit ?? `1${c.label}`}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="grid grid-cols-4 gap-2">
+                  {["🇨🇳","🇺🇸","🇯🇵","🇻🇳"].map((flag) => (
+                    <div key={flag} className="text-center animate-pulse">
+                      <div className="text-base leading-none mb-1">{flag}</div>
+                      <div className="text-sm font-bold text-white/30">—</div>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
-            {rates ? (
-              <div className="grid grid-cols-4 gap-2">
-                {currencies.map((c) => (
-                  <div key={c.code} className="text-center">
-                    <div className="text-base leading-none mb-1">{c.flag}</div>
-                    <div className="text-sm font-bold text-white leading-tight">
-                      {c.value >= 1000
-                        ? c.value.toLocaleString("ko-KR", { maximumFractionDigits: 0 })
-                        : c.value.toFixed(c.decimals)}
-                    </div>
-                    <div className="text-[10px] leading-tight mt-0.5" style={{ color: "rgba(255,255,255,0.5)" }}>
-                      {c.unit ?? `1${c.label}`}
-                    </div>
-                    {c.rateType && (
-                      <div className="text-[9px] leading-tight mt-0.5" style={{ color: "rgba(255,255,255,0.3)" }}>
-                        {c.rateType}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="grid grid-cols-4 gap-2">
-                {["🇨🇳","🇺🇸","🇯🇵","🇻🇳"].map((flag) => (
-                  <div key={flag} className="text-center">
-                    <div className="text-base leading-none mb-1">{flag}</div>
-                    <div className="text-sm font-bold text-white/40">—</div>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
 
-          {/* 소싱 현황 */}
+          {/* ── 소싱 현황 ── */}
           {stats && (
-            <div className="rounded-2xl px-4 py-3" style={{ background: "rgba(255,255,255,0.1)" }}>
-              <p className="text-xs mb-2" style={{ color: "rgba(255,255,255,0.6)" }}>{t("home.stats")}</p>
-              <div className="grid grid-cols-3 gap-2 text-center">
-                <div>
-                  <div className="text-lg font-extrabold text-white">{stats.researching}</div>
-                  <div className="text-[10px] mt-0.5" style={{ color: "rgba(255,255,255,0.5)" }}>🔍 {t("home.researching")}</div>
-                </div>
-                <div>
-                  <div className="text-lg font-extrabold text-white">{stats.inProgress}</div>
-                  <div className="text-[10px] mt-0.5" style={{ color: "rgba(255,255,255,0.5)" }}>📦 {t("home.in_progress")}</div>
-                </div>
-                <div>
-                  <div className="text-lg font-extrabold text-white">{stats.arrived}</div>
-                  <div className="text-[10px] mt-0.5" style={{ color: "rgba(255,255,255,0.5)" }}>✅ {t("home.arrived")}</div>
-                </div>
+            <div className="rounded-2xl px-4 pt-3.5 pb-3" style={{ background: "rgba(255,255,255,0.10)" }}>
+              <p className="text-[10px] font-bold tracking-widest uppercase mb-3" style={{ color: "rgba(255,255,255,0.5)" }}>소싱 현황</p>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { n: stats.researching, label: t("home.researching"), icon: "🔍", color: "#60A5FA", bg: "rgba(59,130,246,0.18)" },
+                  { n: stats.inProgress,  label: t("home.in_progress"), icon: "📦", color: "#FBBF24", bg: "rgba(245,158,11,0.18)" },
+                  { n: stats.arrived,     label: t("home.arrived"),     icon: "✅", color: "#34D399", bg: "rgba(16,185,129,0.18)" },
+                ].map(item => (
+                  <div key={item.label} className="rounded-xl py-3 text-center" style={{ background: item.bg }}>
+                    <div className="text-2xl font-black leading-none" style={{ color: item.color }}>{item.n}</div>
+                    <div className="text-xs mt-1.5 leading-none">{item.icon}</div>
+                    <div className="text-[9px] mt-1 font-medium leading-snug" style={{ color: "rgba(255,255,255,0.5)" }}>{item.label}</div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
