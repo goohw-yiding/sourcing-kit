@@ -37,11 +37,13 @@ function decodeEntities(s: string): string {
 function stripHtml(raw: string): string {
   // CDATA 래퍼 제거
   let s = raw.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/gi, "$1");
-  // <br>, <p>, <li> 등을 줄바꿈으로 변환
+  // 엔티티 디코딩 먼저 (entity-encoded HTML을 실제 태그로 변환 후 제거)
+  s = decodeEntities(s);
+  // <br>, <p>, <li> 등을 공백으로 변환
   s = s.replace(/<br\s*\/?>/gi, " ").replace(/<\/?(p|li|div|ol|ul)[^>]*>/gi, " ");
-  // 나머지 모든 HTML 태그 제거
-  s = s.replace(/<[^>]+>/g, "");
-  // HTML 엔티티 디코딩
+  // 나머지 모든 HTML 태그 제거 — 따옴표 안의 > 문자도 올바르게 처리
+  s = s.replace(/<(?:[^"'>]|"[^"]*"|'[^']*')*>/g, "");
+  // 한 번 더 엔티티 디코딩 (이중 인코딩 처리)
   s = decodeEntities(s);
   // 연속 공백 제거
   return s.replace(/\s+/g, " ").trim();
@@ -99,6 +101,8 @@ function extractDescText(raw: string): string {
 
   // CDATA 언래핑
   let s = raw.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/gi, "$1").trim();
+  // 엔티티 먼저 디코딩 (entity-encoded markup → 실제 HTML)
+  s = decodeEntities(s);
 
   // Google News description 형태:
   // <a href="..."><img .../></a><ol><li><a href="..."><b>제목</b><br/>출처 - N시간 전</a></li>...</ol>
