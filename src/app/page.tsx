@@ -252,7 +252,7 @@ export default function HomePage() {
         </Link>
 
         {/* ── 보조: 소싱 브리핑 ── */}
-        <Link href="/briefing">
+        <Link href="/briefing" className="mt-2 block">
           <div className="rounded-2xl px-5 py-3.5 flex items-center gap-3.5 active:scale-[0.98] transition-transform shadow-sm"
             style={{ background: "linear-gradient(135deg, #263238 0%, #37474F 100%)" }}>
             <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
