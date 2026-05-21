@@ -121,36 +121,45 @@ function extractDescText(raw: string): string {
 // ── Claude 번역 (배치) ───────────────────────────────────────
 async function translateToKorean(items: Omit<NewsItem, "titleOrig">[]): Promise<NewsItem[]> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey || items.length === 0) return items.map(i => ({ ...i }));
+  if (!apiKey || items.length === 0) {
+    console.warn("[briefing/news] ANTHROPIC_API_KEY 없음 또는 items 없음");
+    return items.map(i => ({ ...i }));
+  }
 
   const client = new Anthropic({ apiKey });
 
-  const input = items.map((item, idx) => ({
-    idx,
-    title: item.title,
-    desc:  item.description,
-  }));
+  // 제목만 번역 (desc는 별도로 처리, 번역 부하 줄임)
+  const titles = items.map((item, idx) => `${idx}|${item.title}`).join("\n");
 
-  const prompt = `아래 중국어 뉴스 목록을 한국어로 번역하세요. 무역·소싱 용어 정확히, 지명은 한국어 발음으로.
+  const prompt = `다음 중국어 뉴스 제목들을 한국어로 번역하세요. 무역·소싱 용어는 정확히, 지명은 한국어 발음으로. 회사명은 음역.
+각 줄은 "번호|번역된제목" 형식으로만 응답. 다른 텍스트 없이.
 
-${JSON.stringify(input)}
-
-JSON 배열로만 응답 (다른 텍스트 없이):
-[{"idx":0,"title":"번역 제목","desc":"번역 설명"},...]`;
+${titles}`;
 
   try {
     const msg = await client.messages.create({
       model: "claude-3-5-haiku-20241022",
-      max_tokens: 2048,
+      max_tokens: 1024,
       messages: [{ role: "user", content: prompt }],
     });
-    const text = msg.content[0].type === "text" ? msg.content[0].text : "";
-    const arr  = JSON.parse(text.match(/\[[\s\S]*\]/)![0]) as Array<{ idx: number; title: string; desc: string }>;
+    const text = msg.content[0].type === "text" ? msg.content[0].text.trim() : "";
+    console.log("[briefing/news] 번역 응답:", text.slice(0, 200));
 
-    return items.map((item, i) => {
-      const t = arr.find(x => x.idx === i);
-      return { ...item, titleOrig: item.title, title: t?.title ?? item.title, description: t?.desc ?? item.description };
-    });
+    // 줄별 파싱: "0|한국어 제목"
+    const lines = text.split("\n").filter(l => l.includes("|"));
+    const map = new Map<number, string>();
+    for (const line of lines) {
+      const pipeIdx = line.indexOf("|");
+      const idx = parseInt(line.slice(0, pipeIdx).trim(), 10);
+      const translated = line.slice(pipeIdx + 1).trim();
+      if (!isNaN(idx) && translated) map.set(idx, translated);
+    }
+
+    return items.map((item, i) => ({
+      ...item,
+      titleOrig: item.title,
+      title: map.get(i) ?? item.title,
+    }));
   } catch (err) {
     console.warn("[briefing/news] 번역 실패:", err);
     return items.map(i => ({ ...i }));

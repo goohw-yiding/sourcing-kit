@@ -141,7 +141,7 @@ export default function BriefingPage() {
   const [newsLoading, setNewsLoading] = useState(false);
   const [newsError, setNewsError] = useState(false);
   const [newsUpdatedAt, setNewsUpdatedAt] = useState("");
-  const [showOrig, setShowOrig] = useState(false); // 원문 토글
+  // 원문 토글 제거 — 항상 번역된 제목 표시, 원문은 작게 항상 노출
 
   // 환율 트렌드
   const [exchangeData, setExchangeData] = useState<ExchangeHistoryResponse | null>(null);
@@ -296,19 +296,6 @@ export default function BriefingPage() {
                 )}
               </div>
               <div className="flex items-center gap-2">
-                {/* 원문 토글 */}
-                {selectedRegion.langBadge === "中文" && news.length > 0 && (
-                  <button
-                    onClick={() => setShowOrig(v => !v)}
-                    className={`text-[10px] font-bold px-2 py-1 rounded-full border transition-all ${
-                      showOrig
-                        ? "bg-gray-900 text-white border-gray-900"
-                        : "bg-white text-gray-400 border-gray-200"
-                    }`}
-                  >
-                    {showOrig ? "한국어 보기" : "中文 원문"}
-                  </button>
-                )}
                 <button onClick={() => loadNews(regionId)} disabled={newsLoading}
                   className="flex items-center gap-1 text-xs text-gray-400 active:opacity-60">
                   <RefreshCw className={`w-3 h-3 ${newsLoading ? "animate-spin" : ""}`} />
@@ -354,10 +341,10 @@ export default function BriefingPage() {
                     <div className="flex items-start gap-2">
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-bold text-gray-900 leading-snug line-clamp-2">
-                          {showOrig && item.titleOrig ? item.titleOrig : item.title}
+                          {item.title}
                         </p>
-                        {/* 번역 모드일 때 원문 작게 표시 */}
-                        {!showOrig && item.titleOrig && (
+                        {/* 중국어 원문 항상 작게 표시 */}
+                        {item.titleOrig && (
                           <p className="text-[10px] text-gray-300 mt-0.5 line-clamp-1">{item.titleOrig}</p>
                         )}
                         {item.description && (
