@@ -157,7 +157,7 @@ export default function HsPage() {
             <button
               onClick={search}
               disabled={loading}
-              className="bg-green-600 text-white px-4 rounded-xl flex items-center gap-1"
+              className="bg-green-600 text-white px-4 rounded-xl flex items-center gap-1 cursor-pointer select-none active:scale-[0.97] active:brightness-90 transition-all duration-150"
             >
               {loading ? <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> : <Search className="w-4 h-4" />}
             </button>
@@ -421,7 +421,7 @@ export default function HsPage() {
                 <div className="space-y-2">
                   <a href={`https://unipass.customs.go.kr/clip/hsinfosrch/openULS0201005Q.do?searchVal=${selected.hsCode}`}
                     target="_blank" rel="noopener noreferrer"
-                    className="flex items-center gap-3 w-full bg-green-600 rounded-xl px-4 py-3.5">
+                    className="flex items-center gap-3 w-full bg-green-600 rounded-xl px-4 py-3.5 cursor-pointer select-none active:scale-[0.97] active:brightness-90 transition-all duration-150">
                     <div className="flex-1">
                       <div className="text-sm font-bold text-white">관세청 CLIP 공식 페이지 열기</div>
                       <div className="text-xs text-green-100 mt-0.5">전체 FTA 협정세율 · 수입요건 · 관세율표 전체 조회</div>
@@ -440,7 +440,7 @@ export default function HsPage() {
                     </div>
                   </div>
                   <Link href={`/calculator?customsRate=${selected.rate ?? 0.08}`}
-                    className="flex items-center justify-between w-full bg-orange-50 border border-orange-200 rounded-xl px-4 py-3">
+                    className="flex items-center justify-between w-full bg-orange-50 border border-orange-200 rounded-xl px-4 py-3 cursor-pointer select-none active:scale-[0.97] active:brightness-90 transition-all duration-150">
                     <div>
                       <div className="text-sm font-semibold text-orange-800">원가 계산기에서 계산하기</div>
                       <div className="text-xs text-orange-600 mt-0.5">관세율 {(selected.rate * 100).toFixed(1)}% 자동 적용</div>

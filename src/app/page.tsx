@@ -321,7 +321,7 @@ export default function HomePage() {
             <div className="flex flex-wrap gap-2">
               {CITY_CHIPS.map(c => (
                 <button key={c.id} onClick={() => selectRegion(c.id)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 bg-gray-50 text-sm text-gray-700 active:bg-gray-100">
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-gray-200 bg-gray-50 text-sm text-gray-700 cursor-pointer select-none active:scale-[0.97] active:brightness-90 transition-all duration-150">
                   <span>{c.flag}</span><span>{c.label}</span>
                 </button>
               ))}
@@ -381,7 +381,7 @@ export default function HomePage() {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           {menuItems.map((item, i, arr) => (
             <Link key={item.href} href={item.href}>
-              <div className={`flex items-center gap-4 px-4 py-4 active:bg-gray-50 transition-colors ${i < arr.length - 1 ? "border-b border-gray-50" : ""}`}>
+              <div className={`flex items-center gap-4 px-4 py-4 active:bg-gray-50 cursor-pointer select-none active:scale-[0.97] active:brightness-90 transition-all duration-150 ${i < arr.length - 1 ? "border-b border-gray-50" : ""}`}>
                 <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg bg-[var(--primary-lighter)]">
                   {item.emoji}
                 </div>

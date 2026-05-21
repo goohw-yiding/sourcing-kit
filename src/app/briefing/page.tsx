@@ -247,7 +247,7 @@ export default function BriefingPage() {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all ${
+              className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer select-none active:scale-[0.97] active:brightness-90 ${
                 activeTab === tab.id
                   ? "bg-white text-[var(--primary)] shadow-md"
                   : "bg-white/15 text-white/80"
@@ -271,7 +271,7 @@ export default function BriefingPage() {
                 <button
                   key={r.id}
                   onClick={() => setRegionId(r.id)}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-bold whitespace-nowrap border-2 shrink-0 transition-all ${
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-bold whitespace-nowrap border-2 shrink-0 transition-all cursor-pointer select-none active:scale-[0.97] active:brightness-90 ${
                     regionId === r.id
                       ? "bg-[var(--primary)] text-white border-[var(--primary)]"
                       : "bg-white text-gray-600 border-gray-200"
@@ -320,7 +320,7 @@ export default function BriefingPage() {
                 <div className="text-3xl mb-2">😢</div>
                 <p className="text-sm text-gray-500">뉴스를 불러오지 못했습니다</p>
                 <button onClick={() => loadNews(regionId)}
-                  className="mt-3 px-4 py-2 bg-[var(--primary)] text-white text-xs rounded-xl font-bold">
+                  className="mt-3 px-4 py-2 bg-[var(--primary)] text-white text-xs rounded-xl font-bold cursor-pointer select-none active:scale-[0.97] active:brightness-90 transition-all duration-150">
                   다시 시도
                 </button>
               </div>
@@ -380,7 +380,7 @@ export default function BriefingPage() {
                 <button
                   key={p.id}
                   onClick={() => setPeriod(p.id)}
-                  className={`flex-1 py-2 rounded-xl text-xs font-bold border-2 transition-all ${
+                  className={`flex-1 py-2 rounded-xl text-xs font-bold border-2 transition-all cursor-pointer select-none active:scale-[0.97] active:brightness-90 ${
                     period === p.id
                       ? "bg-[var(--primary)] text-white border-[var(--primary)]"
                       : "bg-white text-gray-500 border-gray-200"
@@ -568,7 +568,7 @@ export default function BriefingPage() {
 
                 {/* 이우구 바로가기 */}
                 <a href="https://www.yiwugo.com" target="_blank" rel="noopener noreferrer"
-                  className="flex items-center gap-3 bg-red-50 border border-red-100 rounded-2xl px-4 py-3 active:opacity-70">
+                  className="flex items-center gap-3 bg-red-50 border border-red-100 rounded-2xl px-4 py-3 cursor-pointer select-none active:scale-[0.97] active:brightness-90 transition-all duration-150">
                   <div className="w-9 h-9 rounded-xl bg-red-100 flex items-center justify-center shrink-0">
                     <span className="text-lg">🛍</span>
                   </div>

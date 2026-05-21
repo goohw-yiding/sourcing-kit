@@ -793,7 +793,7 @@ export default function SourcingPage() {
 
           <button
             onClick={() => openInCalc(selected)}
-            className="w-full bg-white border border-gray-200 text-gray-700 rounded-2xl py-3.5 font-semibold flex items-center justify-center gap-2 shadow-sm"
+            className="w-full bg-white border border-gray-200 text-gray-700 rounded-2xl py-3.5 font-semibold flex items-center justify-center gap-2 shadow-sm cursor-pointer select-none active:scale-[0.97] active:brightness-90 transition-all duration-150"
           >
             <Calculator className="w-5 h-5 text-orange-500" />
             계산기에서 수정하기
@@ -816,14 +816,14 @@ export default function SourcingPage() {
                       updateCostCny: false,
                     });
                   }}
-                  className="w-full bg-orange-500 text-white rounded-2xl py-4 font-bold text-base flex items-center justify-center gap-2 active:opacity-80 shadow-sm"
+                  className="w-full bg-orange-500 text-white rounded-2xl py-4 font-bold text-base flex items-center justify-center gap-2 cursor-pointer select-none active:scale-[0.97] active:brightness-90 transition-all duration-150 shadow-sm"
                 >
                   📦 발주하기
                 </button>
                 {selected.status === "sourcing" && (
                   <button
                     onClick={() => router.push("/proposals")}
-                    className="w-full bg-blue-500 text-white rounded-2xl py-4 font-bold text-base flex items-center justify-center gap-2 active:opacity-80"
+                    className="w-full bg-blue-500 text-white rounded-2xl py-4 font-bold text-base flex items-center justify-center gap-2 cursor-pointer select-none active:scale-[0.97] active:brightness-90 transition-all duration-150"
                   >
                     📋 제안서 만들기
                   </button>
@@ -834,7 +834,7 @@ export default function SourcingPage() {
             {selected.status === "ordered" && (
               <button
                 onClick={() => { setShowShipModal(true); setShipDate(new Date().toISOString().slice(0, 10)); }}
-                className="w-full bg-purple-600 text-white rounded-2xl py-4 font-bold text-base flex items-center justify-center gap-2 active:opacity-80 shadow-sm"
+                className="w-full bg-purple-600 text-white rounded-2xl py-4 font-bold text-base flex items-center justify-center gap-2 cursor-pointer select-none active:scale-[0.97] active:brightness-90 transition-all duration-150 shadow-sm"
               >
                 🚢 중국내 선적 처리
               </button>
@@ -843,7 +843,7 @@ export default function SourcingPage() {
             {(selected.status === "shipping" || selected.status === "shipped") && (
               <button
                 onClick={() => updateStatus(selected.id, "arrived")}
-                className="w-full bg-emerald-600 text-white rounded-2xl py-4 font-bold text-base flex items-center justify-center gap-2 active:opacity-80 shadow-sm"
+                className="w-full bg-emerald-600 text-white rounded-2xl py-4 font-bold text-base flex items-center justify-center gap-2 cursor-pointer select-none active:scale-[0.97] active:brightness-90 transition-all duration-150 shadow-sm"
               >
                 ✅ 입고완료 처리
               </button>
@@ -862,7 +862,7 @@ export default function SourcingPage() {
                     updateCostCny: false,
                   });
                 }}
-                className="w-full bg-orange-500 text-white rounded-2xl py-4 font-bold text-base flex items-center justify-center gap-2 active:opacity-80 shadow-sm"
+                className="w-full bg-orange-500 text-white rounded-2xl py-4 font-bold text-base flex items-center justify-center gap-2 cursor-pointer select-none active:scale-[0.97] active:brightness-90 transition-all duration-150 shadow-sm"
               >
                 📦 재발주하기
               </button>
@@ -1048,7 +1048,7 @@ export default function SourcingPage() {
                 <button
                   onClick={submitOrder}
                   disabled={orderSaving || !orderForm.unitPriceCny || !orderForm.quantity}
-                  className="w-full bg-orange-500 text-white rounded-2xl py-4 font-bold text-base disabled:opacity-40 shadow-sm"
+                  className="w-full bg-orange-500 text-white rounded-2xl py-4 font-bold text-base disabled:opacity-40 shadow-sm cursor-pointer select-none active:scale-[0.97] active:brightness-90 transition-all duration-150"
                 >
                   {orderSaving ? "처리 중..." : "발주 확정하기 →"}
                 </button>
@@ -1075,7 +1075,7 @@ export default function SourcingPage() {
                 </div>
                 <button
                   onClick={submitShipping}
-                  className="w-full bg-purple-600 text-white rounded-2xl py-4 font-bold text-base shadow-sm"
+                  className="w-full bg-purple-600 text-white rounded-2xl py-4 font-bold text-base shadow-sm cursor-pointer select-none active:scale-[0.97] active:brightness-90 transition-all duration-150"
                 >
                   🚢 선적 확인
                 </button>
@@ -1142,7 +1142,7 @@ export default function SourcingPage() {
               </div>
               <button
                 onClick={runMarketAnalysis}
-                className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-2xl py-3 flex items-center justify-center gap-2 text-sm font-bold shadow-md active:opacity-80"
+                className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-2xl py-3 flex items-center justify-center gap-2 text-sm font-bold shadow-md cursor-pointer select-none active:scale-[0.97] active:brightness-90 transition-all duration-150"
               >
                 <Sparkles className="w-4 h-4" />
                 AI 시장조사 — 한국 판매가·마진 분석
@@ -1154,7 +1154,7 @@ export default function SourcingPage() {
               <button
                 type="button"
                 onClick={() => cameraInputRef.current?.click()}
-                className="flex-1 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex flex-col items-center justify-center py-8 gap-2 text-white active:opacity-80 shadow-lg"
+                className="flex-1 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex flex-col items-center justify-center py-8 gap-2 text-white cursor-pointer select-none active:scale-[0.97] active:brightness-90 transition-all duration-150 shadow-lg"
               >
                 <div className="bg-white/20 rounded-full p-3">
                   <Camera className="w-7 h-7" />
@@ -1168,7 +1168,7 @@ export default function SourcingPage() {
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="flex-1 bg-gradient-to-br from-slate-500 to-slate-700 rounded-2xl flex flex-col items-center justify-center py-8 gap-2 text-white active:opacity-80 shadow-lg"
+                className="flex-1 bg-gradient-to-br from-slate-500 to-slate-700 rounded-2xl flex flex-col items-center justify-center py-8 gap-2 text-white cursor-pointer select-none active:scale-[0.97] active:brightness-90 transition-all duration-150 shadow-lg"
               >
                 <div className="bg-white/20 rounded-full p-3">
                   <ImageIcon className="w-7 h-7" />
@@ -2043,7 +2043,7 @@ export default function SourcingPage() {
           <button
             onClick={save}
             disabled={saving}
-            className="w-full text-white rounded-2xl py-4 font-bold text-base disabled:opacity-50 bg-[var(--primary)]"
+            className="w-full text-white rounded-2xl py-4 font-bold text-base disabled:opacity-50 bg-[var(--primary)] cursor-pointer select-none active:scale-[0.97] active:brightness-90 transition-all duration-150"
           >
             {saving ? "저장 중..." : "저장"}
           </button>
@@ -2155,7 +2155,7 @@ export default function SourcingPage() {
                           }
                           setShowMarket(false);
                         }}
-                        className="w-full bg-blue-600 text-white text-sm font-bold py-2.5 rounded-xl active:opacity-80"
+                        className="w-full bg-blue-600 text-white text-sm font-bold py-2.5 rounded-xl cursor-pointer select-none active:scale-[0.97] active:brightness-90 transition-all duration-150"
                       >
                         ✓ 상품명 + 관세율 한번에 적용
                       </button>
@@ -2283,18 +2283,18 @@ export default function SourcingPage() {
                         <div className="grid grid-cols-3 gap-2">
                           <button
                             onClick={() => openNewTab(`https://search.shopping.naver.com/search/all?query=${encodeURIComponent(krKw)}`)}
-                            className="bg-green-500 text-white text-xs font-bold py-3 rounded-xl text-center w-full active:opacity-80">
+                            className="bg-green-500 text-white text-xs font-bold py-3 rounded-xl text-center w-full cursor-pointer select-none active:scale-[0.97] active:brightness-90 transition-all duration-150">
                             네이버쇼핑
                           </button>
                           <button
                             onClick={() => openNewTab(`https://www.coupang.com/np/search?q=${encodeURIComponent(krKw)}`)}
-                            className="bg-red-500 text-white text-xs font-bold py-3 rounded-xl text-center w-full active:opacity-80">
+                            className="bg-red-500 text-white text-xs font-bold py-3 rounded-xl text-center w-full cursor-pointer select-none active:scale-[0.97] active:brightness-90 transition-all duration-150">
                             쿠팡
                           </button>
                           <button
                             onClick={() => open1688(cnRaw, fallbackKr)}
                             disabled={cn1688Loading}
-                            className="bg-orange-500 text-white text-xs font-bold py-3 rounded-xl text-center w-full active:opacity-80 disabled:opacity-60">
+                            className="bg-orange-500 text-white text-xs font-bold py-3 rounded-xl text-center w-full cursor-pointer select-none active:scale-[0.97] active:brightness-90 transition-all duration-150 disabled:opacity-60">
                             {cn1688Loading ? "번역중…" : "1688"}
                           </button>
                         </div>
@@ -2497,7 +2497,7 @@ export default function SourcingPage() {
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">형식 선택</p>
 
                 <button onClick={() => openCatalog("internal")}
-                  className="w-full flex items-center gap-4 bg-orange-50 border border-orange-200 rounded-2xl px-4 py-3.5 active:opacity-70 text-left">
+                  className="w-full flex items-center gap-4 bg-orange-50 border border-orange-200 rounded-2xl px-4 py-3.5 cursor-pointer select-none active:scale-[0.97] active:brightness-90 transition-all duration-150 text-left">
                   <span className="text-2xl">📄</span>
                   <div>
                     <div className="font-bold text-gray-900 text-sm">내부용 카탈로그 PDF</div>
@@ -2506,7 +2506,7 @@ export default function SourcingPage() {
                 </button>
 
                 <button onClick={() => openCatalog("buyer")}
-                  className="w-full flex items-center gap-4 bg-blue-50 border border-blue-200 rounded-2xl px-4 py-3.5 active:opacity-70 text-left">
+                  className="w-full flex items-center gap-4 bg-blue-50 border border-blue-200 rounded-2xl px-4 py-3.5 cursor-pointer select-none active:scale-[0.97] active:brightness-90 transition-all duration-150 text-left">
                   <span className="text-2xl">📋</span>
                   <div>
                     <div className="font-bold text-gray-900 text-sm">바이어 제안서 PDF</div>
@@ -2515,7 +2515,7 @@ export default function SourcingPage() {
                 </button>
 
                 <button onClick={downloadExcel}
-                  className="w-full flex items-center gap-4 bg-green-50 border border-green-200 rounded-2xl px-4 py-3.5 active:opacity-70 text-left">
+                  className="w-full flex items-center gap-4 bg-green-50 border border-green-200 rounded-2xl px-4 py-3.5 cursor-pointer select-none active:scale-[0.97] active:brightness-90 transition-all duration-150 text-left">
                   <span className="text-2xl">📊</span>
                   <div>
                     <div className="font-bold text-gray-900 text-sm">엑셀 다운로드</div>
@@ -2693,7 +2693,7 @@ export default function SourcingPage() {
                           }
                           setShowMarket(false);
                         }}
-                        className="w-full bg-blue-600 text-white text-sm font-bold py-2.5 rounded-xl active:opacity-80"
+                        className="w-full bg-blue-600 text-white text-sm font-bold py-2.5 rounded-xl cursor-pointer select-none active:scale-[0.97] active:brightness-90 transition-all duration-150"
                       >
                         ✓ 상품명 + 관세율 한번에 적용
                       </button>
@@ -2821,18 +2821,18 @@ export default function SourcingPage() {
                         <div className="grid grid-cols-3 gap-2">
                           <button
                             onClick={() => openNewTab(`https://search.shopping.naver.com/search/all?query=${encodeURIComponent(krKw)}`)}
-                            className="bg-green-500 text-white text-xs font-bold py-3 rounded-xl text-center w-full active:opacity-80">
+                            className="bg-green-500 text-white text-xs font-bold py-3 rounded-xl text-center w-full cursor-pointer select-none active:scale-[0.97] active:brightness-90 transition-all duration-150">
                             네이버쇼핑
                           </button>
                           <button
                             onClick={() => openNewTab(`https://www.coupang.com/np/search?q=${encodeURIComponent(krKw)}`)}
-                            className="bg-red-500 text-white text-xs font-bold py-3 rounded-xl text-center w-full active:opacity-80">
+                            className="bg-red-500 text-white text-xs font-bold py-3 rounded-xl text-center w-full cursor-pointer select-none active:scale-[0.97] active:brightness-90 transition-all duration-150">
                             쿠팡
                           </button>
                           <button
                             onClick={() => open1688(cnRaw, fallbackKr)}
                             disabled={cn1688Loading}
-                            className="bg-orange-500 text-white text-xs font-bold py-3 rounded-xl text-center w-full active:opacity-80 disabled:opacity-60">
+                            className="bg-orange-500 text-white text-xs font-bold py-3 rounded-xl text-center w-full cursor-pointer select-none active:scale-[0.97] active:brightness-90 transition-all duration-150 disabled:opacity-60">
                             {cn1688Loading ? "번역중…" : "1688"}
                           </button>
                         </div>

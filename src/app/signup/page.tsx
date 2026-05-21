@@ -63,7 +63,7 @@ export default function SignupPage() {
               <input type="password" value={passwordConfirm} onChange={(e) => setPasswordConfirm(e.target.value)} placeholder="비밀번호 재입력" required className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[var(--primary)]" />
             </div>
             {error && <div className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-600">{error}</div>}
-            <button type="submit" disabled={loading} className="w-full bg-[var(--primary)] text-white rounded-xl py-3.5 font-bold text-sm disabled:opacity-50">
+            <button type="submit" disabled={loading} className="w-full bg-[var(--primary)] text-white rounded-xl py-3.5 font-bold text-sm disabled:opacity-50 cursor-pointer select-none active:scale-[0.97] active:brightness-90 transition-all duration-150">
               {loading ? "처리 중..." : "회원가입"}
             </button>
           </form>

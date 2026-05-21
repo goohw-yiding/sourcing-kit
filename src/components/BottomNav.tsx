@@ -31,7 +31,7 @@ export function BottomNav() {
               <Link
                 key={tab.href}
                 href={tab.href}
-                className={`flex flex-col items-center justify-center gap-0.5 flex-1 py-1.5 rounded-xl transition-all active:scale-95 ${
+                className={`flex flex-col items-center justify-center gap-0.5 flex-1 py-1.5 rounded-xl cursor-pointer select-none transition-all duration-150 active:scale-[0.97] active:brightness-90 ${
                   isActive ? "text-[var(--primary)]" : "text-gray-400"
                 }`}
               >

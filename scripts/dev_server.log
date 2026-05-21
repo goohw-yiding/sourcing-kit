@@ -1,0 +1,16 @@
+▲ Next.js 16.2.6 (Turbopack)
+- Local:         http://localhost:3001
+- Network:       http://192.168.0.9:3001
+- Environments: .env.local, .env
+✓ Ready in 457ms
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+
+ GET /api/auth/csrf 200 in 980ms (next.js: 891ms, proxy.ts: 60ms, application-code: 28ms)
+ GET /api/auth/csrf 200 in 45ms (next.js: 21ms, proxy.ts: 4ms, application-code: 20ms)
+ POST /api/auth/callback/credentials 401 in 55ms (next.js: 6ms, proxy.ts: 9ms, application-code: 41ms)
+ GET /login?callbackUrl=%2F 200 in 269ms (next.js: 147ms, proxy.ts: 3ms, application-code: 118ms)
+ GET /api/auth/session 200 in 28ms (next.js: 6ms, proxy.ts: 5ms, application-code: 18ms)
+ GET /login?callbackUrl=%2Fpricing 200 in 39ms (next.js: 4ms, proxy.ts: 5ms, application-code: 31ms)
+ GET /api/auth/session 200 in 43ms (next.js: 22ms, proxy.ts: 3ms, application-code: 18ms)
+ GET /api/auth/csrf 200 in 43ms (next.js: 19ms, proxy.ts: 3ms, application-code: 20ms)
+ POST /api/auth/callback/credentials 401 in 41ms (next.js: 6ms, proxy.ts: 3ms, application-code: 32ms)

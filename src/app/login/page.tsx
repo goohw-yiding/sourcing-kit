@@ -126,7 +126,7 @@ function LoginForm() {
               type="button"
               onClick={() => handleSocialLogin("kakao")}
               disabled={!!socialLoading}
-              className="w-full bg-[#FEE500] text-[#3C1E1E] rounded-xl py-3.5 font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60"
+              className="w-full bg-[#FEE500] text-[#3C1E1E] rounded-xl py-3.5 font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer select-none active:scale-[0.97] active:brightness-90 transition-all duration-150"
             >
               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
                 <path fillRule="evenodd" clipRule="evenodd" d="M10 2C5.582 2 2 4.918 2 8.514c0 2.26 1.413 4.247 3.556 5.41l-.906 3.377c-.08.297.27.534.52.352l4.01-2.701C9.453 14.985 9.724 15 10 15c4.418 0 8-2.918 8-6.486S14.418 2 10 2z" fill="#3C1E1E"/>
@@ -139,7 +139,7 @@ function LoginForm() {
               type="button"
               onClick={() => handleSocialLogin("google")}
               disabled={!!socialLoading}
-              className="w-full bg-white text-gray-700 border border-gray-300 rounded-xl py-3.5 font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60 relative"
+              className="w-full bg-white text-gray-700 border border-gray-300 rounded-xl py-3.5 font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-60 relative cursor-pointer select-none active:scale-[0.97] active:brightness-90 transition-all duration-150"
             >
               <svg width="20" height="20" viewBox="0 0 24 24">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -194,7 +194,7 @@ function LoginForm() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-[var(--primary)] text-white rounded-xl py-3.5 font-bold text-sm disabled:opacity-50"
+                className="w-full bg-[var(--primary)] text-white rounded-xl py-3.5 font-bold text-sm disabled:opacity-50 cursor-pointer select-none active:scale-[0.97] active:brightness-90 transition-all duration-150"
               >
                 {loading ? "로그인 중..." : "이메일로 로그인"}
               </button>

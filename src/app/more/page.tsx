@@ -26,7 +26,7 @@ function MarketGuideSection() {
             <div key={region.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
               {/* 헤더 */}
               <button
-                className="w-full flex items-center gap-3 px-4 py-3.5 active:bg-gray-50 transition-colors text-left"
+                className="w-full flex items-center gap-3 px-4 py-3.5 active:bg-gray-50 transition-all duration-150 text-left cursor-pointer select-none active:scale-[0.97] active:brightness-90"
                 onClick={() => setOpenId(isOpen ? null : region.id)}
               >
                 <div className={`w-11 h-11 rounded-2xl ${region.color} flex items-center justify-center text-2xl shrink-0`}>
@@ -108,7 +108,7 @@ function TradeFairSection() {
           <button
             key={c}
             onClick={() => { setFilterCountry(c); setShowAll(false); }}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap border-2 transition-all shrink-0 ${
+            className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap border-2 transition-all shrink-0 cursor-pointer select-none active:scale-[0.97] active:brightness-90 ${
               filterCountry === c
                 ? "bg-gray-900 text-white border-gray-900"
                 : "bg-white text-gray-500 border-gray-200"
@@ -183,7 +183,7 @@ function TradeFairSection() {
       {sorted.length > 4 && (
         <button
           onClick={() => setShowAll(v => !v)}
-          className="w-full mt-2 py-3 rounded-2xl border-2 border-dashed border-gray-200 text-sm font-semibold text-gray-400 active:bg-gray-50"
+          className="w-full mt-2 py-3 rounded-2xl border-2 border-dashed border-gray-200 text-sm font-semibold text-gray-400 active:bg-gray-50 cursor-pointer select-none active:scale-[0.97] active:brightness-90 transition-all duration-150"
         >
           {showAll ? "접기 ▲" : `전체 ${sorted.length}개 보기 ▼`}
         </button>
@@ -308,13 +308,13 @@ export default function MorePage() {
             </div>
             <div className="grid grid-cols-2 gap-2">
               <Link href="/proposals">
-                <div className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold text-white border border-white/30 active:opacity-70">
+                <div className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold text-white border border-white/30 cursor-pointer select-none active:scale-[0.97] active:brightness-90 transition-all duration-150">
                   <ClipboardList className="w-4 h-4" />
                   제안서 목록
                 </div>
               </Link>
               <Link href="/buyers">
-                <div className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold text-white border border-white/30 active:opacity-70">
+                <div className="flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-sm font-semibold text-white border border-white/30 cursor-pointer select-none active:scale-[0.97] active:brightness-90 transition-all duration-150">
                   👥 바이어 관리
                 </div>
               </Link>
@@ -366,7 +366,7 @@ export default function MorePage() {
           <div className="bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100">
             {toolMenus.map((m, i) => (
               <Link key={m.href} href={m.href}>
-                <div className={`flex items-center gap-4 px-4 py-4 active:bg-gray-50 transition-colors ${i < toolMenus.length - 1 ? "border-b border-gray-50" : ""}`}>
+                <div className={`flex items-center gap-4 px-4 py-4 active:bg-gray-50 cursor-pointer select-none active:scale-[0.97] active:brightness-90 transition-all duration-150 ${i < toolMenus.length - 1 ? "border-b border-gray-50" : ""}`}>
                   <div className={`w-11 h-11 rounded-2xl ${m.color} flex items-center justify-center shrink-0`}>
                     <m.icon className="w-5 h-5" />
                   </div>
@@ -397,7 +397,7 @@ export default function MorePage() {
               const active = lang === l.id;
               return (
                 <button key={l.id} onClick={() => changeLang(l.id as LangId)}
-                  className={`flex items-center gap-2.5 px-3 py-3 rounded-2xl border-2 transition-all ${active ? "border-gray-900 bg-white shadow-md" : "border-gray-200 bg-white"}`}>
+                  className={`flex items-center gap-2.5 px-3 py-3 rounded-2xl border-2 transition-all cursor-pointer select-none active:scale-[0.97] active:brightness-90 ${active ? "border-gray-900 bg-white shadow-md" : "border-gray-200 bg-white"}`}>
                   <span className="text-xl leading-none">{l.flag}</span>
                   <div className="flex-1 text-left min-w-0">
                     <div className={`text-sm font-semibold truncate ${active ? "text-gray-900" : "text-gray-700"}`}>{l.country}</div>
@@ -417,7 +417,7 @@ export default function MorePage() {
         {/* ── 로그아웃 ── */}
         <div className="space-y-2">
           <Link href="/admin">
-            <div className="w-full flex items-center gap-3 px-4 py-4 bg-white rounded-2xl shadow-sm border border-gray-100 active:bg-gray-50 transition-colors">
+            <div className="w-full flex items-center gap-3 px-4 py-4 bg-white rounded-2xl shadow-sm border border-gray-100 active:bg-gray-50 cursor-pointer select-none active:scale-[0.97] active:brightness-90 transition-all duration-150">
               <div className="w-11 h-11 rounded-2xl bg-gray-900 text-white flex items-center justify-center shrink-0 text-lg">
                 🔐
               </div>
@@ -430,7 +430,7 @@ export default function MorePage() {
           </Link>
           <button
             onClick={() => signOut({ callbackUrl: "/login" })}
-            className="w-full flex items-center gap-3 px-4 py-4 bg-white rounded-2xl shadow-sm border border-gray-100 text-left active:bg-gray-50 transition-colors"
+            className="w-full flex items-center gap-3 px-4 py-4 bg-white rounded-2xl shadow-sm border border-gray-100 text-left active:bg-gray-50 cursor-pointer select-none active:scale-[0.97] active:brightness-90 transition-all duration-150"
           >
             <div className="w-11 h-11 rounded-2xl bg-red-100 text-red-500 flex items-center justify-center shrink-0">
               <LogOut className="w-5 h-5" />
@@ -453,7 +453,7 @@ export default function MorePage() {
               const active = theme === th.id;
               return (
                 <button key={th.id} onClick={() => handleThemeChange(th.id as ThemeId)}
-                  className={`relative flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-all ${active ? "border-gray-900 bg-white shadow-md" : "border-gray-200 bg-white"}`}>
+                  className={`relative flex flex-col items-center gap-2 p-3 rounded-2xl border-2 transition-all cursor-pointer select-none active:scale-[0.97] active:brightness-90 ${active ? "border-gray-900 bg-white shadow-md" : "border-gray-200 bg-white"}`}>
                   <div className="w-full h-14 rounded-xl overflow-hidden flex flex-col" style={{ background: th.previewBg }}>
                     <div className="h-3" style={{ background: th.previewAccent }} />
                     <div className="flex-1 flex items-center justify-center px-2">

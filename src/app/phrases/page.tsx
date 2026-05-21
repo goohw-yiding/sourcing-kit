@@ -505,7 +505,7 @@ function NearbyTab({ onShowPhrases }: { onShowPhrases: (catId: string) => void }
                         href={amapWebUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex flex-col items-center gap-1.5 bg-blue-600 text-white rounded-2xl py-4 font-bold text-sm shadow-sm active:opacity-80"
+                        className="flex flex-col items-center gap-1.5 bg-blue-600 text-white rounded-2xl py-4 font-bold text-sm shadow-sm cursor-pointer select-none active:scale-[0.97] active:brightness-90 transition-all duration-150"
                       >
                         <span className="text-2xl">🗺️</span>
                         고덕지도
@@ -515,7 +515,7 @@ function NearbyTab({ onShowPhrases }: { onShowPhrases: (catId: string) => void }
                         href={googleUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex flex-col items-center gap-1.5 bg-green-600 text-white rounded-2xl py-4 font-bold text-sm shadow-sm active:opacity-80"
+                        className="flex flex-col items-center gap-1.5 bg-green-600 text-white rounded-2xl py-4 font-bold text-sm shadow-sm cursor-pointer select-none active:scale-[0.97] active:brightness-90 transition-all duration-150"
                       >
                         <span className="text-2xl">📍</span>
                         구글 지도
