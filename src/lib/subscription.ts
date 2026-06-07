@@ -28,13 +28,14 @@ export const PLANS = {
   },
   pro: {
     name: "Pro",
-    price: 7900,              // 월구독
-    priceYearly: 5900,        // 연구독 월 환산 (연 ₩70,800)
+    price: 7900,
+    priceYearly: 5900,
     billingType: "monthly" as const,
     productLimit: Infinity,
     supplierLimit: Infinity,
     proposalLimit: Infinity,
     aiAnalysisDaily: Infinity,
+    aiAnalysisDailyFirst: Infinity,
   },
 } as const;
 
@@ -198,8 +199,10 @@ export async function checkAndIncrementAiUsage(
   });
   const isFirstDay = prevLogCount === 0;
 
-  const planConfig = PLANS[plan] as typeof PLANS["free"];
-  const limit = isFirstDay ? planConfig.aiAnalysisDailyFirst : planConfig.aiAnalysisDaily;
+  const planConfig = PLANS[plan];
+  const limit = isFirstDay
+    ? ("aiAnalysisDailyFirst" in planConfig ? planConfig.aiAnalysisDailyFirst : planConfig.aiAnalysisDaily)
+    : planConfig.aiAnalysisDaily;
 
   const log = await prisma.aiUsageLog.findUnique({
     where: { tenantId_date: { tenantId, date } },
