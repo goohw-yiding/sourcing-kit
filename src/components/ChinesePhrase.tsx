@@ -2,7 +2,7 @@
 import { useState, useRef, useCallback } from "react";
 
 interface Props {
-  phrases: Array<{ cn: string; pinyin: string; kr: string }>;
+  phrases: Array<{ cn: string; pinyin: string; kr: string; pinyinKr?: string }>;
 }
 
 export function ChinesePhrase({ phrases }: Props) {
