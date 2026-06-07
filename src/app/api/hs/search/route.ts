@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
+import { prisma } from "@/lib/prisma";
 
 export const maxDuration = 60;
 
@@ -256,6 +257,8 @@ export async function GET(req: NextRequest) {
     const auth = await getAuthTenantId();
     if (!(auth instanceof NextResponse)) {
       const { tenantId } = auth;
+      // 검색 로그 기록
+      prisma.searchLog.create({ data: { tenantId, type: "hs_code", query } }).catch(() => {});
       const { allowed, used, limit } = await checkAndIncrementAiUsage(tenantId);
       if (!allowed) {
         const plan = await getTenantPlan(tenantId);

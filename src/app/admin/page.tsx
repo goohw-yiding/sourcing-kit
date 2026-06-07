@@ -32,6 +32,13 @@ interface TenantUser {
   createdAt: string;
 }
 
+interface SearchLog {
+  id: string;
+  type: string;
+  query: string;
+  createdAt: string;
+}
+
 interface TenantInfo {
   tenantId: string;
   tenantName: string;
@@ -43,6 +50,7 @@ interface TenantInfo {
   productCount: number;
   products: Product[];
   aiUsageTotal: number;
+  searchLogs: SearchLog[];
 }
 
 const PLAN_LABELS: Record<string, string> = {
@@ -226,26 +234,50 @@ export default function AdminPage() {
                     <span>📅 {new Date(t.createdAt).toLocaleDateString("ko-KR")} 가입</span>
                   </div>
 
-                  {/* 상품 목록 (펼침) */}
+                  {/* 상세 (펼침) */}
                   {isExpanded && (
-                    <div className="border-t border-gray-100 px-4 py-3 space-y-2 bg-gray-50">
-                      <p className="text-xs font-semibold text-gray-500 mb-1">등록 상품 ({t.productCount})</p>
-                      {t.products.length === 0 ? (
-                        <p className="text-xs text-gray-400">등록된 상품 없음</p>
-                      ) : (
-                        t.products.map(p => (
-                          <div key={p.id} className="bg-white rounded-xl px-3 py-2.5 border border-gray-100 flex items-center justify-between">
-                            <div className="min-w-0">
-                              <p className="text-sm font-medium text-gray-800 truncate">{p.nameKr}</p>
-                              {p.nameCn && <p className="text-xs text-gray-400 truncate">{p.nameCn}</p>}
+                    <div className="border-t border-gray-100 bg-gray-50 divide-y divide-gray-100">
+                      {/* 검색 로그 */}
+                      <div className="px-4 py-3 space-y-1.5">
+                        <p className="text-xs font-semibold text-gray-500 mb-2">🔍 최근 검색어 ({t.searchLogs.length})</p>
+                        {t.searchLogs.length === 0 ? (
+                          <p className="text-xs text-gray-400">검색 기록 없음</p>
+                        ) : (
+                          t.searchLogs.map(s => (
+                            <div key={s.id} className="flex items-center justify-between">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0 ${s.type === "ai_market" ? "bg-orange-100 text-orange-600" : "bg-blue-100 text-blue-600"}`}>
+                                  {s.type === "ai_market" ? "AI분석" : "HS코드"}
+                                </span>
+                                <span className="text-xs text-gray-700 truncate">{s.query}</span>
+                              </div>
+                              <span className="text-[10px] text-gray-400 shrink-0 ml-2">
+                                {new Date(s.createdAt).toLocaleDateString("ko-KR")}
+                              </span>
                             </div>
-                            <div className="text-right shrink-0 ml-2">
-                              <p className="text-xs font-bold text-[var(--primary)]">¥{p.costCny}</p>
-                              <p className="text-[10px] text-gray-400">{new Date(p.createdAt).toLocaleDateString("ko-KR")}</p>
+                          ))
+                        )}
+                      </div>
+                      {/* 등록 상품 */}
+                      <div className="px-4 py-3 space-y-2">
+                        <p className="text-xs font-semibold text-gray-500 mb-1">📦 등록 상품 ({t.productCount})</p>
+                        {t.products.length === 0 ? (
+                          <p className="text-xs text-gray-400">등록된 상품 없음</p>
+                        ) : (
+                          t.products.map(p => (
+                            <div key={p.id} className="bg-white rounded-xl px-3 py-2.5 border border-gray-100 flex items-center justify-between">
+                              <div className="min-w-0">
+                                <p className="text-sm font-medium text-gray-800 truncate">{p.nameKr}</p>
+                                {p.nameCn && <p className="text-xs text-gray-400 truncate">{p.nameCn}</p>}
+                              </div>
+                              <div className="text-right shrink-0 ml-2">
+                                <p className="text-xs font-bold text-[var(--primary)]">¥{p.costCny}</p>
+                                <p className="text-[10px] text-gray-400">{new Date(p.createdAt).toLocaleDateString("ko-KR")}</p>
+                              </div>
                             </div>
-                          </div>
-                        ))
-                      )}
+                          ))
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>

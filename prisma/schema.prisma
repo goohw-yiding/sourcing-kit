@@ -210,6 +210,17 @@ model GiftCode {
   createdBy   String?                     // 관리자 이메일
 }
 
+model SearchLog {
+  id        String   @id @default(cuid())
+  tenantId  String
+  type      String   // "ai_market" | "hs_code"
+  query     String   // 검색어 (상품명 또는 HS 검색어)
+  createdAt DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([createdAt])
+}
+
 model Order {
   id              String    @id @default(cuid())
   tenantId        String

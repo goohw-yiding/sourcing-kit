@@ -28,12 +28,24 @@ export async function GET() {
     orderBy: { createdAt: "desc" },
   });
 
-  // AiUsageLog 집계 (tenantId별 총 사용 횟수)
+  // AiUsageLog 집계
   const aiLogs = await prisma.aiUsageLog.groupBy({
     by: ["tenantId"],
     _sum: { count: true },
   });
   const aiMap = Object.fromEntries(aiLogs.map(l => [l.tenantId, l._sum.count ?? 0]));
+
+  // SearchLog 최근 20건 (tenantId별)
+  const allSearchLogs = await prisma.searchLog.findMany({
+    where: { tenantId: { in: tenants.map(t => t.id) } },
+    orderBy: { createdAt: "desc" },
+    take: 200,
+  });
+  const searchMap: Record<string, typeof allSearchLogs> = {};
+  for (const log of allSearchLogs) {
+    if (!searchMap[log.tenantId]) searchMap[log.tenantId] = [];
+    if (searchMap[log.tenantId].length < 20) searchMap[log.tenantId].push(log);
+  }
 
   const result = tenants.map(t => ({
     tenantId: t.id,
@@ -46,6 +58,7 @@ export async function GET() {
     productCount: t._count.products,
     products: t.products,
     aiUsageTotal: aiMap[t.id] ?? 0,
+    searchLogs: searchMap[t.id] ?? [],
   }));
 
   return NextResponse.json(result);

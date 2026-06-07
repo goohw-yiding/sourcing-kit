@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { getAuthTenantId } from "@/lib/getAuth";
 import { checkAndIncrementAiUsage, PLANS, getTenantPlan } from "@/lib/subscription";
+import { prisma } from "@/lib/prisma";
 
 export const maxDuration = 60;
 
@@ -234,6 +235,10 @@ export async function POST(req: NextRequest) {
     if (!image && !productName) {
       return NextResponse.json({ error: "이미지 또는 상품명 필요" }, { status: 400 });
     }
+
+    // 검색 로그 기록
+    const logQuery = productName ?? (image ? `[이미지] ${image.name ?? "image"}` : "unknown");
+    prisma.searchLog.create({ data: { tenantId, type: "ai_market", query: logQuery } }).catch(() => {});
 
     // AI 분석
     let aiResult;
