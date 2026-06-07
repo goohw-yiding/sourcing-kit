@@ -199,10 +199,9 @@ export async function checkAndIncrementAiUsage(
   });
   const isFirstDay = prevLogCount === 0;
 
-  const planConfig = PLANS[plan];
-  const limit = isFirstDay
-    ? ("aiAnalysisDailyFirst" in planConfig ? planConfig.aiAnalysisDailyFirst : planConfig.aiAnalysisDaily)
-    : planConfig.aiAnalysisDaily;
+  const dailyLimit = PLANS[plan].aiAnalysisDaily as number;
+  const firstDayLimit = PLANS[plan].aiAnalysisDailyFirst as number;
+  const limit = isFirstDay ? firstDayLimit : dailyLimit;
 
   const log = await prisma.aiUsageLog.findUnique({
     where: { tenantId_date: { tenantId, date } },
