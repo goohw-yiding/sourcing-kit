@@ -9,20 +9,22 @@ export const PLANS = {
     name: "무료",
     price: 0,
     billingType: "free" as const,
-    productLimit: 10,        // 상품 최대 등록 수
-    supplierLimit: 5,         // 공급업체 최대 등록 수
-    proposalLimit: 3,         // 견적서 최대 생성 수
-    aiAnalysisDaily: 3,       // AI 분석 일일 횟수
+    productLimit: 10,
+    supplierLimit: 5,
+    proposalLimit: 3,
+    aiAnalysisDaily: 3,       // 기본 일일 횟수
+    aiAnalysisDailyFirst: 10, // 첫날 일일 횟수
   },
   taste: {
     name: "맛보기",
     price: 9900,
     billingType: "once" as const,
-    durationDays: 30,         // 30일 사용권
-    productLimit: 100,        // 상품 최대 등록 수
-    supplierLimit: 30,        // 공급업체 최대 등록 수
-    proposalLimit: 20,        // 견적서 최대 생성 수
-    aiAnalysisDaily: 20,      // AI 분석 일일 횟수
+    durationDays: 30,
+    productLimit: 100,
+    supplierLimit: 30,
+    proposalLimit: 20,
+    aiAnalysisDaily: 100,
+    aiAnalysisDailyFirst: 100,
   },
   pro: {
     name: "Pro",
@@ -178,11 +180,10 @@ export async function checkAndIncrementAiUsage(
   tenantId: string
 ): Promise<{ allowed: boolean; used: number; limit: number }> {
   const plan = await getTenantPlan(tenantId);
-  const limit = PLANS[plan].aiAnalysisDaily as number;
+  const date = getTodayKST();
 
   // 무제한 플랜
-  if (!isFinite(limit)) {
-    const date = getTodayKST();
+  if (!isFinite(PLANS[plan].aiAnalysisDaily as number)) {
     await prisma.aiUsageLog.upsert({
       where: { tenantId_date: { tenantId, date } },
       create: { tenantId, date, count: 1 },
@@ -191,7 +192,15 @@ export async function checkAndIncrementAiUsage(
     return { allowed: true, used: 0, limit: Infinity };
   }
 
-  const date = getTodayKST();
+  // 첫날 여부: 오늘 이전 날짜의 로그가 없으면 첫날
+  const prevLogCount = await prisma.aiUsageLog.count({
+    where: { tenantId, date: { lt: date } },
+  });
+  const isFirstDay = prevLogCount === 0;
+
+  const planConfig = PLANS[plan] as typeof PLANS["free"];
+  const limit = isFirstDay ? planConfig.aiAnalysisDailyFirst : planConfig.aiAnalysisDaily;
+
   const log = await prisma.aiUsageLog.findUnique({
     where: { tenantId_date: { tenantId, date } },
   });
@@ -201,7 +210,6 @@ export async function checkAndIncrementAiUsage(
     return { allowed: false, used: current, limit };
   }
 
-  // 횟수 증가
   await prisma.aiUsageLog.upsert({
     where: { tenantId_date: { tenantId, date } },
     create: { tenantId, date, count: 1 },

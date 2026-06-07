@@ -259,7 +259,7 @@ export async function GET(req: NextRequest) {
       const { allowed, used, limit } = await checkAndIncrementAiUsage(tenantId);
       if (!allowed) {
         const plan = await getTenantPlan(tenantId);
-        const nextPlan = plan === "free" ? "맛보기(일 20회)" : "Pro(무제한)";
+        const nextPlan = plan === "free" ? "맛보기(일 100회)" : "Pro(무제한)";
         return NextResponse.json(
           {
             error: `오늘 AI 분석 횟수(${limit}회)를 모두 사용했습니다. ${nextPlan} 플랜으로 업그레이드하세요.`,

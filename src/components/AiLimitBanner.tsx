@@ -22,7 +22,7 @@ export function AiLimitBanner({ used, limit, plan, onClose }: Props) {
   if (hidden) return null;
 
   const nextPlan = plan === "free" ? "맛보기" : "Pro";
-  const nextLimit = plan === "free" ? "일 20회" : "무제한";
+  const nextLimit = plan === "free" ? "일 100회" : "무제한";
 
   const handleClose = () => {
     setHidden(true);
