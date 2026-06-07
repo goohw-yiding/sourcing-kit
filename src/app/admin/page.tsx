@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ArrowLeft, Plus, Trash2, Copy, Check, RefreshCw } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Copy, Check, RefreshCw, ChevronDown, ChevronUp, Users } from "lucide-react";
 import Link from "next/link";
 
 interface GiftCode {
@@ -16,24 +16,64 @@ interface GiftCode {
   createdAt:      string;
 }
 
+interface Product {
+  id: string;
+  nameKr: string;
+  nameCn: string | null;
+  status: string;
+  createdAt: string;
+  costCny: number;
+}
+
+interface TenantUser {
+  id: string;
+  name: string;
+  email: string;
+  createdAt: string;
+}
+
+interface TenantInfo {
+  tenantId: string;
+  tenantName: string;
+  createdAt: string;
+  plan: string;
+  planStatus: string;
+  planExpiresAt: string | null;
+  users: TenantUser[];
+  productCount: number;
+  products: Product[];
+  aiUsageTotal: number;
+}
+
 const PLAN_LABELS: Record<string, string> = {
+  free:  "무료",
   pro:   "⚡ Pro",
   taste: "🍯 맛보기",
 };
 
+const PLAN_COLORS: Record<string, string> = {
+  free:  "bg-gray-100 text-gray-500",
+  taste: "bg-amber-100 text-amber-700",
+  pro:   "bg-orange-100 text-orange-700",
+};
+
 export default function AdminPage() {
+  const [tab, setTab] = useState<"codes" | "users">("users");
+
+  // 코드 탭
   const [codes, setCodes]     = useState<GiftCode[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState("");
-
-  // 신규 코드 폼
   const [plan,      setPlan]     = useState("pro");
   const [maxUses,   setMaxUses]  = useState(1);
   const [memo,      setMemo]     = useState("");
   const [creating,  setCreating] = useState(false);
-
-  // 복사 완료
   const [copied, setCopied] = useState<string | null>(null);
+
+  // 유저 탭
+  const [tenants, setTenants]       = useState<TenantInfo[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [expandedTenant, setExpandedTenant] = useState<string | null>(null);
 
   const loadCodes = async () => {
     setLoading(true);
@@ -48,7 +88,17 @@ export default function AdminPage() {
     }
   };
 
-  useEffect(() => { loadCodes(); }, []);
+  const loadUsers = async () => {
+    setUsersLoading(true);
+    try {
+      const res = await fetch("/api/admin/users");
+      if (res.ok) setTenants(await res.json());
+    } finally {
+      setUsersLoading(false);
+    }
+  };
+
+  useEffect(() => { loadCodes(); loadUsers(); }, []);
 
   const handleCreate = async () => {
     setCreating(true);
@@ -109,7 +159,103 @@ export default function AdminPage() {
         </div>
       </div>
 
-      <div className="px-4 pt-4 space-y-4">
+      {/* 탭 */}
+      <div className="px-4 pt-4 flex gap-2">
+        <button
+          onClick={() => setTab("users")}
+          className={`flex-1 py-2.5 rounded-xl text-sm font-bold border-2 transition-all flex items-center justify-center gap-1.5 ${tab === "users" ? "bg-[var(--primary)] text-white border-[var(--primary)]" : "bg-white text-gray-500 border-gray-200"}`}
+        >
+          <Users className="w-4 h-4" /> 유저 현황
+        </button>
+        <button
+          onClick={() => setTab("codes")}
+          className={`flex-1 py-2.5 rounded-xl text-sm font-bold border-2 transition-all ${tab === "codes" ? "bg-[var(--primary)] text-white border-[var(--primary)]" : "bg-white text-gray-500 border-gray-200"}`}
+        >
+          🎫 초대 코드
+        </button>
+      </div>
+
+      <div className="px-4 pt-2 space-y-4">
+
+        {/* ── 유저 현황 탭 ── */}
+        {tab === "users" && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">전체 유저 {tenants.length}명</p>
+              <button onClick={loadUsers} className="flex items-center gap-1 text-xs text-gray-400">
+                <RefreshCw className={`w-3 h-3 ${usersLoading ? "animate-spin" : ""}`} />
+              </button>
+            </div>
+
+            {usersLoading && (
+              <div className="space-y-2">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="bg-white rounded-2xl p-4 border border-gray-100 animate-pulse h-24" />
+                ))}
+              </div>
+            )}
+
+            {!usersLoading && tenants.map(t => {
+              const isExpanded = expandedTenant === t.tenantId;
+              const mainUser = t.users[0];
+              return (
+                <div key={t.tenantId} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                  <button
+                    className="w-full px-4 py-3.5 flex items-center gap-3 active:bg-gray-50"
+                    onClick={() => setExpandedTenant(isExpanded ? null : t.tenantId)}
+                  >
+                    <div className="w-9 h-9 rounded-full bg-[var(--primary)]/10 flex items-center justify-center text-sm font-bold text-[var(--primary)] shrink-0">
+                      {(mainUser?.name ?? t.tenantName).charAt(0)}
+                    </div>
+                    <div className="flex-1 text-left min-w-0">
+                      <p className="font-bold text-gray-900 text-sm truncate">{mainUser?.name ?? t.tenantName}</p>
+                      <p className="text-xs text-gray-400 truncate">{mainUser?.email ?? "-"}</p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${PLAN_COLORS[t.plan]}`}>
+                        {PLAN_LABELS[t.plan]}
+                      </span>
+                      {isExpanded ? <ChevronUp className="w-4 h-4 text-gray-300" /> : <ChevronDown className="w-4 h-4 text-gray-300" />}
+                    </div>
+                  </button>
+
+                  {/* 요약 배지 */}
+                  <div className="px-4 pb-3 flex gap-3 text-xs text-gray-500">
+                    <span>📦 상품 {t.productCount}개</span>
+                    <span>🤖 AI {t.aiUsageTotal}회</span>
+                    <span>📅 {new Date(t.createdAt).toLocaleDateString("ko-KR")} 가입</span>
+                  </div>
+
+                  {/* 상품 목록 (펼침) */}
+                  {isExpanded && (
+                    <div className="border-t border-gray-100 px-4 py-3 space-y-2 bg-gray-50">
+                      <p className="text-xs font-semibold text-gray-500 mb-1">등록 상품 ({t.productCount})</p>
+                      {t.products.length === 0 ? (
+                        <p className="text-xs text-gray-400">등록된 상품 없음</p>
+                      ) : (
+                        t.products.map(p => (
+                          <div key={p.id} className="bg-white rounded-xl px-3 py-2.5 border border-gray-100 flex items-center justify-between">
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-gray-800 truncate">{p.nameKr}</p>
+                              {p.nameCn && <p className="text-xs text-gray-400 truncate">{p.nameCn}</p>}
+                            </div>
+                            <div className="text-right shrink-0 ml-2">
+                              <p className="text-xs font-bold text-[var(--primary)]">¥{p.costCny}</p>
+                              <p className="text-[10px] text-gray-400">{new Date(p.createdAt).toLocaleDateString("ko-KR")}</p>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* ── 초대코드 탭 ── */}
+        {tab === "codes" && <>
 
         {/* ── 코드 생성 카드 ── */}
         <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
@@ -276,6 +422,8 @@ export default function AdminPage() {
             <li>Pro 플랜 즉시 활성화 🎉</li>
           </ol>
         </div>
+
+        </>}
 
       </div>
     </div>
