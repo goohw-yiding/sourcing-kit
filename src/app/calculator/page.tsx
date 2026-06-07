@@ -220,7 +220,7 @@ export default function CalculatorPage() {
     key: keyof CalcInput,
     _unit = "원",
     _placeholder = "0",
-    phrases?: Array<{ cn: string; pinyin: string; kr: string }>
+    phrases?: Array<{ cn: string; pinyin: string; kr: string; pinyinKr?: string }>
   ) => {
     const krwVal = (input[key] as number) || 0;
     const cnyVal = input.exchangeRate > 0 ? Math.round((krwVal / input.exchangeRate) * 100) / 100 : 0;

@@ -2,7 +2,7 @@ export interface Phrase {
   kr: string;
   cn: string;
   pinyin: string;
-  pinyinKr: string;
+  pinyinKr?: string;
 }
 
 export interface PhraseCategory {
