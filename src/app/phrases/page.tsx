@@ -641,6 +641,7 @@ export default function PhrasesPage() {
                 <div className="flex-1 min-w-0">
                   <p className="font-bold text-gray-900 text-base">{phrase.cn}</p>
                   <p className="text-xs text-gray-400 mt-0.5">{phrase.pinyin}</p>
+                  <p className="text-xs text-blue-400 mt-0.5">{phrase.pinyinKr}</p>
                   <p className="text-sm text-gray-600 mt-1">{phrase.kr}</p>
                 </div>
                 <div className="flex flex-col items-end gap-2 shrink-0">

@@ -107,6 +107,7 @@ export function ChinesePhrase({ phrases }: Props) {
               <div className="flex-1 min-w-0">
                 <div className="text-lg font-bold text-red-700 leading-tight">{p.cn}</div>
                 <div className="text-xs text-red-400 mt-0.5">{p.pinyin}</div>
+                <div className="text-xs text-blue-400 mt-0.5">{p.pinyinKr}</div>
                 <div className="text-xs text-gray-500 mt-0.5">{p.kr}</div>
                 {error === i && (
                   <div className="text-[10px] text-orange-500 mt-0.5">음성 재생 실패 · 네트워크를 확인해주세요</div>
