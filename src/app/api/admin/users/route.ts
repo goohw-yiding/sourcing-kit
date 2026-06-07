@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { authOptions } from "@/lib/authOptions";
 import { prisma } from "@/lib/prisma";
 
 const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? "goohw593@gmail.com").split(",").map(e => e.trim());
