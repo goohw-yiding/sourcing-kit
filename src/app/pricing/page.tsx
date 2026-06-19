@@ -1,10 +1,11 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Check, Zap, Star, ArrowLeft, Loader2, X, Clock } from "lucide-react";
 import { loadTossPayments } from "@tosspayments/tosspayments-sdk";
+import { useIsTwa } from "@/lib/useIsTwa";
 
 const CLIENT_KEY = process.env.NEXT_PUBLIC_TOSS_CLIENT_KEY!;
 const TASTE_PRICE = 9900;
@@ -55,6 +56,7 @@ interface SubInfo {
 export default function PricingPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const isTwa = useIsTwa(); // 구글 플레이 앱(TWA)에서는 결제 버튼 숨김 (정책 준수)
   const [subscription, setSubscription] = useState<SubInfo | null>(null);
   const [billingTab, setBillingTab] = useState<BillingTab>("monthly");
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
@@ -224,6 +226,10 @@ export default function PricingPage() {
             <div className="bg-gray-50 rounded-xl px-4 py-3 text-center">
               <p className="text-gray-400 text-sm">Pro 플랜 이용 중</p>
             </div>
+          ) : isTwa ? (
+            <div className="bg-gray-50 rounded-xl px-4 py-3 text-center">
+              <p className="text-gray-500 text-xs leading-relaxed">앱에서는 구독 신청이 지원되지 않습니다.</p>
+            </div>
           ) : (
             <button
               onClick={handleTaste}
@@ -298,6 +304,10 @@ export default function PricingPage() {
               >
                 구독 관리
               </button>
+            </div>
+          ) : isTwa ? (
+            <div className="bg-gray-50 rounded-xl px-4 py-3 text-center">
+              <p className="text-gray-500 text-xs leading-relaxed">앱에서는 구독 신청이 지원되지 않습니다.</p>
             </div>
           ) : (
             <button

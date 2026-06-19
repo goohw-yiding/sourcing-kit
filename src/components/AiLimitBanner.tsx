@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 /**
  * AI 분석 일일 한도 초과 시 표시되는 배너/토스트
@@ -7,6 +7,7 @@
 import { useRouter } from "next/navigation";
 import { Zap, X } from "lucide-react";
 import { useState } from "react";
+import { useIsTwa } from "@/lib/useIsTwa";
 
 interface Props {
   used: number;
@@ -17,6 +18,7 @@ interface Props {
 
 export function AiLimitBanner({ used, limit, plan, onClose }: Props) {
   const router = useRouter();
+  const isTwa = useIsTwa(); // 앱(TWA)에서는 업그레이드 유도 숨김 (구글 정책 준수)
   const [hidden, setHidden] = useState(false);
 
   if (hidden) return null;
@@ -38,14 +40,18 @@ export function AiLimitBanner({ used, limit, plan, onClose }: Props) {
         <div className="flex-1 min-w-0">
           <p className="text-sm font-bold">오늘 AI 분석 {limit}회 소진</p>
           <p className="text-xs text-gray-300 mt-0.5">
-            {nextPlan} 플랜으로 업그레이드하면 {nextLimit} 분석 가능해요.
+            {isTwa
+              ? "내일 다시 이용할 수 있어요."
+              : `${nextPlan} 플랜으로 업그레이드하면 ${nextLimit} 분석 가능해요.`}
           </p>
-          <button
-            onClick={() => router.push("/pricing")}
-            className="mt-2 bg-[var(--primary)] text-white text-xs font-bold px-3 py-1.5 rounded-lg"
-          >
-            ⚡ {nextPlan} 플랜 보기
-          </button>
+          {!isTwa && (
+            <button
+              onClick={() => router.push("/pricing")}
+              className="mt-2 bg-[var(--primary)] text-white text-xs font-bold px-3 py-1.5 rounded-lg"
+            >
+              ⚡ {nextPlan} 플랜 보기
+            </button>
+          )}
         </div>
         <button onClick={handleClose} className="text-gray-400 shrink-0 p-1">
           <X className="w-4 h-4" />
