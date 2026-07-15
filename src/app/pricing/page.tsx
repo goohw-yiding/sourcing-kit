@@ -410,6 +410,7 @@ export default function PricingPage() {
           <p><span className="font-medium text-gray-500">사업자등록번호</span> · 210-29-50637</p>
           <p><span className="font-medium text-gray-500">사업장 주소</span> · 경기도 고양시 덕양구 청초로 10, A동 AA17-1723호 (덕은동, 지엘메트로시티한강)</p>
           <p><span className="font-medium text-gray-500">대표번호</span> · 010-2623-6907</p>
+          <p><span className="font-medium text-gray-500">통신판매업 신고번호</span> · 2025-고양덕양구-2338</p>
           <p className="pt-1 text-[10px]">© 2025 이딩컴퍼니. All rights reserved.</p>
         </div>
       </div>

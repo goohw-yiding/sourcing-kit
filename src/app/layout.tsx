@@ -53,6 +53,7 @@ export default function RootLayout({
                 <p>대표자 · 구희완 &nbsp;|&nbsp; 사업자등록번호 · 210-29-50637</p>
                 <p>경기도 고양시 덕양구 청초로 10, A동 AA17-1723호 (덕은동, 지엘메트로시티한강)</p>
                 <p>대표번호 · 010-2623-6907</p>
+                <p>통신판매업 신고번호 · 2025-고양덕양구-2338</p>
                 <p className="pt-0.5">© 2025 이딩컴퍼니. All rights reserved.</p>
               </footer>
             </AppProviders>
