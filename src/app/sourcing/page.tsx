@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import { ArrowLeft, Plus, Camera, Search, Trash2, X, Calculator, ChevronDown, ChevronUp, ChevronRight, QrCode, Navigation, Loader2, TrendingUp, ShieldAlert, ExternalLink, Sparkles, Image as ImageIcon } from "lucide-react";
@@ -56,10 +56,24 @@ interface OrderRecord {
   expectedArrival: string | null;
 }
 
+/** 사이즈 옵션 — costCny가 없으면 상품 기본가 적용 */
+interface ProductSize {
+  id: string;
+  name: string;
+  widthCm?: number | null;
+  depthCm?: number | null;
+  heightCm?: number | null;
+  costCny?: number | null;
+  moq?: number | null;
+  sortOrder: number;
+}
+
 interface Product {
   id: string;
   nameKr: string;
   nameCn?: string | null;
+  colors?: string[];
+  sizes?: ProductSize[];
   imageUrl?: string | null;
   costCny: number;
   exchangeRate: number;
@@ -766,6 +780,63 @@ export default function SourcingPage() {
             )}
             <p className="text-xs text-orange-200 mt-2">* 과세가격 = 원화원가 기준</p>
           </div>
+
+          {/* ── 색상 / 사이즈 옵션 ── */}
+          {((selected.colors?.length ?? 0) > 0 || (selected.sizes?.length ?? 0) > 0) && (
+            <div className="bg-white border border-gray-100 rounded-2xl p-4 space-y-3">
+              {(selected.colors?.length ?? 0) > 0 && (
+                <div>
+                  <p className="text-xs text-gray-500 mb-1.5">색상 {selected.colors!.length}종</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {selected.colors!.map((c) => (
+                      <span key={c} className="px-2.5 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                        {c}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {(selected.sizes?.length ?? 0) > 0 && (
+                <div>
+                  <p className="text-xs text-gray-500 mb-1.5">
+                    사이즈 {selected.sizes!.length}종 <span className="text-gray-400">· 사이즈별 매입단가</span>
+                  </p>
+                  <div className="space-y-1.5">
+                    {selected.sizes!.map((s) => {
+                      const unitCny = s.costCny ?? selected.costCny;
+                      const sizeCalcInput = { ...selected, costCny: unitCny };
+                      const sizeLanded = calcLandedCost(sizeCalcInput).landedCost;
+                      const dims =
+                        s.widthCm != null && s.depthCm != null && s.heightCm != null
+                          ? `${s.widthCm}×${s.depthCm}×${s.heightCm}cm`
+                          : null;
+                      return (
+                        <div
+                          key={s.id}
+                          className="flex items-center justify-between gap-2 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2"
+                        >
+                          <div className="min-w-0">
+                            <span className="text-xs font-bold text-amber-700">{s.name}</span>
+                            {dims && <span className="text-[10px] text-gray-400 ml-1.5">{dims}</span>}
+                            {s.moq ? (
+                              <span className="text-[10px] text-blue-500 ml-1.5">MOQ {s.moq.toLocaleString()}</span>
+                            ) : null}
+                          </div>
+                          <div className="text-right shrink-0">
+                            <div className="text-[10px] text-gray-400">
+                              ¥{unitCny}
+                              {s.costCny == null && " (기본가)"}
+                            </div>
+                            <div className="text-xs font-bold text-gray-900">{formatKrw(sizeLanded)}</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {calcWithCurrentRate && (
             <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4">

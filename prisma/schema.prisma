@@ -108,6 +108,8 @@ model Product {
   imageUrl       String?
   memo           String?
 
+  colors         String[] @default([])   // 색상 목록 — 가격에 영향 없음 (칩 입력)
+
   costCny        Float
   exchangeRate   Float
   packagingCost  Float   @default(0)
@@ -139,6 +141,27 @@ model Product {
   createdBy      User?     @relation(fields: [createdById], references: [id])
   proposalItems  ProposalItem[]
   orders         Order[]
+  sizes          ProductSize[]
+}
+
+/// 사이즈 옵션 — 가격을 가르는 축. costCny가 비어있으면 상품 기본가(Product.costCny) 사용
+model ProductSize {
+  id        String  @id @default(cuid())
+  productId String
+
+  name      String   // "S" | "M" | "L" | 직접입력(예: "35mm")
+  widthCm   Float?   // 가로
+  depthCm   Float?   // 세로
+  heightCm  Float?   // 높이
+
+  costCny   Float?   // 비우면 상품 기본가 적용
+  moq       Int?     // 비우면 상품 기본 MOQ 적용
+  sortOrder Int      @default(0)
+
+  createdAt DateTime @default(now())
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
 }
 
 model Buyer {

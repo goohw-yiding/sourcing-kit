@@ -30,6 +30,12 @@ interface RateInfo {
   source: string;
 }
 
+/** 사이즈 옵션 — 가격을 가르는 축. cost가 비어있으면 기본 단가 적용 */
+type SizeOpt = { name: string; w: string; d: string; h: string; cost: string; moq: string };
+const COLOR_PRESETS = ["빨강", "파랑", "검정", "흰색", "노랑", "초록", "분홍", "회색"];
+const SIZE_PRESETS = ["S", "M", "L", "XL"];
+const newSize = (name: string): SizeOpt => ({ name, w: "", d: "", h: "", cost: "", moq: "" });
+
 export default function CalculatorPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -66,6 +72,35 @@ export default function CalculatorPage() {
   const [saveSupplier, setSaveSupplier] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+
+  // ── 색상 / 사이즈 옵션 (사진 한 장에 색상·사이즈가 여러 개인 경우) ──
+  const [colors, setColors] = useState<string[]>([]);
+  const [colorInput, setColorInput] = useState("");
+  const [sizeOpts, setSizeOpts] = useState<SizeOpt[]>([]);
+  const [sizeInput, setSizeInput] = useState("");
+
+  const toggleColor = (c: string) =>
+    setColors((prev) => (prev.includes(c) ? prev.filter((x) => x !== c) : [...prev, c]));
+
+  const toggleSize = (name: string) =>
+    setSizeOpts((prev) =>
+      prev.some((s) => s.name === name) ? prev.filter((s) => s.name !== name) : [...prev, newSize(name)]
+    );
+
+  const setSizeField = (name: string, key: keyof SizeOpt, value: string) =>
+    setSizeOpts((prev) => prev.map((s) => (s.name === name ? { ...s, [key]: value } : s)));
+
+  const addCustomColor = () => {
+    const v = colorInput.trim();
+    if (v && !colors.includes(v)) setColors((prev) => [...prev, v]);
+    setColorInput("");
+  };
+
+  const addCustomSize = () => {
+    const v = sizeInput.trim();
+    if (v && !sizeOpts.some((s) => s.name === v)) setSizeOpts((prev) => [...prev, newSize(v)]);
+    setSizeInput("");
+  };
 
   const [moq, setMoq] = useState(0);
   const [targetMargin, setTargetMargin] = useState(40); // 목표 마진율 %
@@ -205,6 +240,15 @@ export default function CalculatorPage() {
           hasCoOrigin: input.hasCoOrigin,
           coOriginCost: input.coOriginCost,
           moq: moq || null,
+          colors,
+          sizes: sizeOpts.map((s) => ({
+            name: s.name,
+            widthCm: s.w,
+            depthCm: s.d,
+            heightCm: s.h,
+            costCny: s.cost,
+            moq: s.moq,
+          })),
         }),
       });
       setSaved(true);
@@ -1105,6 +1149,167 @@ export default function CalculatorPage() {
                 className="w-full border border-gray-200 rounded-xl px-3 py-3 text-sm focus:outline-none focus:border-blue-400"
               />
             </div>
+
+            {/* ── 색상 (가격 무관 · 탭해서 선택) ── */}
+            <div>
+              <label className="text-xs text-gray-500 mb-1.5 block">색상 (선택)</label>
+              <div className="flex flex-wrap gap-1.5">
+                {COLOR_PRESETS.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => toggleColor(c)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                      colors.includes(c)
+                        ? "bg-[var(--primary)] text-white border-[var(--primary)]"
+                        : "bg-white text-gray-600 border-gray-200"
+                    }`}
+                  >
+                    {c}
+                  </button>
+                ))}
+                {colors
+                  .filter((c) => !COLOR_PRESETS.includes(c))
+                  .map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => toggleColor(c)}
+                      className="px-3 py-1.5 rounded-full text-xs font-semibold border bg-[var(--primary)] text-white border-[var(--primary)]"
+                    >
+                      {c} ✕
+                    </button>
+                  ))}
+              </div>
+              <div className="flex gap-1.5 mt-2">
+                <input
+                  type="text"
+                  value={colorInput}
+                  onChange={(e) => setColorInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addCustomColor();
+                    }
+                  }}
+                  placeholder="색상 직접입력"
+                  className="flex-1 border border-gray-200 rounded-lg px-2.5 py-2 text-xs focus:outline-none focus:border-blue-400"
+                />
+                <button
+                  type="button"
+                  onClick={addCustomColor}
+                  className="px-3 rounded-lg text-xs font-semibold bg-gray-100 text-gray-600"
+                >
+                  추가
+                </button>
+              </div>
+            </div>
+
+            {/* ── 사이즈 (가격을 가르는 축) ── */}
+            <div>
+              <label className="text-xs text-gray-500 mb-1.5 block">
+                사이즈 (선택) <span className="text-gray-400">· 단가 비우면 기본가 적용</span>
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {SIZE_PRESETS.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => toggleSize(s)}
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-semibold border transition-all ${
+                      sizeOpts.some((o) => o.name === s)
+                        ? "bg-amber-500 text-white border-amber-500"
+                        : "bg-white text-gray-600 border-gray-200"
+                    }`}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+              <div className="flex gap-1.5 mt-2">
+                <input
+                  type="text"
+                  value={sizeInput}
+                  onChange={(e) => setSizeInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addCustomSize();
+                    }
+                  }}
+                  placeholder="사이즈 직접입력 (예: 35mm)"
+                  className="flex-1 border border-gray-200 rounded-lg px-2.5 py-2 text-xs focus:outline-none focus:border-amber-400"
+                />
+                <button
+                  type="button"
+                  onClick={addCustomSize}
+                  className="px-3 rounded-lg text-xs font-semibold bg-gray-100 text-gray-600"
+                >
+                  추가
+                </button>
+              </div>
+
+              {/* 선택된 사이즈별 상세: 가로/세로/높이 + 단가 + MOQ */}
+              {sizeOpts.length > 0 && (
+                <div className="mt-2.5 space-y-2">
+                  {sizeOpts.map((s) => (
+                    <div key={s.name} className="border border-amber-200 bg-amber-50/50 rounded-xl p-2.5">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-bold text-amber-700">{s.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => toggleSize(s.name)}
+                          className="text-[10px] text-gray-400 px-1"
+                        >
+                          삭제
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-1 mb-1.5">
+                        {(["w", "d", "h"] as const).map((k, i) => (
+                          <div key={k} className="flex items-center gap-1 flex-1">
+                            <input
+                              type="number"
+                              inputMode="decimal"
+                              value={s[k]}
+                              onChange={(e) => setSizeField(s.name, k, e.target.value)}
+                              placeholder={["가로", "세로", "높이"][i]}
+                              className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:border-amber-400"
+                            />
+                            {i < 2 && <span className="text-[10px] text-gray-400">×</span>}
+                          </div>
+                        ))}
+                        <span className="text-[10px] text-gray-400 shrink-0">cm</span>
+                      </div>
+                      <div className="flex gap-1.5">
+                        <div className="flex-1 flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-2">
+                          <span className="text-[10px] text-gray-400 shrink-0">단가 ¥</span>
+                          <input
+                            type="number"
+                            inputMode="decimal"
+                            value={s.cost}
+                            onChange={(e) => setSizeField(s.name, "cost", e.target.value)}
+                            placeholder={input.costCny ? String(input.costCny) : "기본가"}
+                            className="w-full py-1.5 text-xs focus:outline-none"
+                          />
+                        </div>
+                        <div className="flex-1 flex items-center gap-1 bg-white border border-gray-200 rounded-lg px-2">
+                          <span className="text-[10px] text-gray-400 shrink-0">MOQ</span>
+                          <input
+                            type="number"
+                            inputMode="numeric"
+                            value={s.moq}
+                            onChange={(e) => setSizeField(s.name, "moq", e.target.value)}
+                            placeholder={moq ? String(moq) : "기본"}
+                            className="w-full py-1.5 text-xs focus:outline-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <button
               onClick={saveToNotebook}
               disabled={!saveName.trim() || saving}
