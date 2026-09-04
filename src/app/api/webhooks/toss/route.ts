@@ -4,10 +4,10 @@
  * 개발자센터 → 웹훅 에 이 URL을 등록한다.
  *   https://www.sourcing-kit.kr/api/webhooks/toss?key=<TOSS_WEBHOOK_SECRET>
  *
- * 처리하는 이벤트
+ * 처리하는 이벤트 (개발자센터에서 실제로 고를 수 있는 이름 기준)
  *  - PAYMENT_STATUS_CHANGED : 결제 상태 변경(승인/취소/실패)
  *  - CANCEL_STATUS_CHANGED  : 취소 상태 변경
- *  - BILLING_KEY_STATUS_CHANGED : 빌링키 폐기(카드 해지·만료 등)
+ *  - BILLING_DELETED        : 빌링키 삭제(카드 해지·만료 등) → 자동결제 불가
  *
  * ★ 토스는 2xx가 아니면 계속 재시도한다. 우리가 모르는 이벤트여도 200을 돌려주고
  *   로그만 남긴다. 그래야 재시도 폭주가 안 생긴다.
@@ -73,25 +73,33 @@ export async function POST(req: NextRequest) {
   console.log("[webhooks/toss]", eventType, JSON.stringify(data ?? {}).slice(0, 800));
 
   try {
-    // ── 빌링키 폐기: 더 이상 자동결제 불가 → 해지 예약 ──────────
-    if (eventType === "BILLING_KEY_STATUS_CHANGED" && data?.billingKey) {
-      const sub = await prisma.subscription.findFirst({
-        where: { billingKey: data.billingKey },
-      });
-      if (sub && data.status && data.status !== "ACTIVE") {
+    // ── 빌링키 삭제: 더 이상 자동결제 불가 → 해지 예약 ──────────
+    // BILLING_DELETED 가 실제 이벤트명. (구 문서의 BILLING_KEY_STATUS_CHANGED 도 같이 받아둔다)
+    if (eventType === "BILLING_DELETED" || eventType === "BILLING_KEY_STATUS_CHANGED") {
+      const sub = data?.billingKey
+        ? await prisma.subscription.findFirst({ where: { billingKey: data.billingKey } })
+        : data?.customerKey
+        ? await prisma.subscription.findFirst({ where: { customerKey: data.customerKey } })
+        : null;
+
+      // 상태값이 함께 오면 ACTIVE 가 아닐 때만, 안 오면(삭제 통보) 그대로 해지
+      const deleted = !data?.status || data.status !== "ACTIVE";
+
+      if (sub && deleted) {
         await prisma.subscription.update({
           where: { id: sub.id },
           data: {
             status: "cancelled",
             cancelledAt: new Date(),
             nextBillingAt: null,
+            billingKey: null,
             // 이미 결제한 기간까지는 계속 사용
             expiresAt: sub.nextBillingAt ?? sub.expiresAt ?? new Date(),
-            lastBillingError: `빌링키 폐기(${data.status})`,
+            lastBillingError: `빌링키 삭제(${eventType}${data?.status ? `/${data.status}` : ""})`,
           },
         });
       }
-      return NextResponse.json({ ok: true });
+      return NextResponse.json({ ok: true, handled: eventType });
     }
 
     // ── 결제 상태 변경 ────────────────────────────────────────
