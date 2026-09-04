@@ -1,7 +1,21 @@
 import { getToken } from "next-auth/jwt";
 import { NextRequest, NextResponse } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/signup", "/api/auth", "/proposal/", "/api/proposal-share", "/api/tts", "/privacy", "/terms", "/_next", "/favicon.ico", "/google97a7c4d819fc641a.html"];
+const PUBLIC_PATHS = [
+  "/login",
+  "/signup",
+  "/api/auth",
+  "/proposal/",
+  "/api/proposal-share",
+  "/api/tts",
+  "/api/cron/",       // Vercel Cron (Bearer CRON_SECRET 로 자체 검증)
+  "/api/webhooks/",   // 토스페이먼츠 웹훅 (?key= 로 자체 검증)
+  "/privacy",
+  "/terms",
+  "/_next",
+  "/favicon.ico",
+  "/google97a7c4d819fc641a.html",
+];
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;

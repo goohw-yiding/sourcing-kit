@@ -43,6 +43,16 @@ interface MarketResult {
   searchLinks: { naver: string; coupang: string; elevenst: string };
 }
 
+/** 발주 옵션별 수량 — 색상 × 사이즈 */
+interface OrderItemRecord {
+  id: string;
+  color: string | null;
+  sizeName: string | null;
+  quantity: number;
+  unitPriceCny: number | null;
+  sortOrder: number;
+}
+
 interface OrderRecord {
   id: string;
   status: string;
@@ -54,6 +64,7 @@ interface OrderRecord {
   orderedAt: string;
   shippedAt: string | null;
   expectedArrival: string | null;
+  items?: OrderItemRecord[];
 }
 
 /** 사이즈 옵션 — costCny가 없으면 상품 기본가 적용 */
@@ -206,6 +217,8 @@ export default function SourcingPage() {
     memo: "",               // 메모
     updateCostCny: false,   // 원가계산서도 업데이트
   });
+  // 발주 옵션별 수량 — key: "색상|사이즈" (없는 축은 빈 문자열)
+  const [optionQty, setOptionQty] = useState<Record<string, string>>({});
   const [orderSaving, setOrderSaving] = useState(false);
   const [orderHistory, setOrderHistory] = useState<OrderRecord[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
@@ -436,16 +449,73 @@ export default function SourcingPage() {
     }
   };
 
+  // ── 발주 옵션(색상 × 사이즈) 매트릭스 ────────────────────────
+  const optKey = (color: string | null, sizeName: string | null) =>
+    `${color ?? ""}|${sizeName ?? ""}`;
+
+  const hasColorAxis = (selected?.colors?.length ?? 0) > 0;
+  const hasSizeAxis = (selected?.sizes?.length ?? 0) > 0;
+  /** 색상이든 사이즈든 하나라도 있으면 옵션별로 수량을 나눠 넣는다 */
+  const useOptionMatrix = hasColorAxis || hasSizeAxis;
+
+  const axisColors: (string | null)[] = hasColorAxis ? selected!.colors! : [null];
+  const axisSizes: (ProductSize | null)[] = hasSizeAxis ? selected!.sizes! : [null];
+
+  /** 입력된 칸만 모아 발주 항목 배열로 */
+  const buildOptionItems = () => {
+    if (!useOptionMatrix) return [];
+    const out: {
+      color: string | null;
+      sizeName: string | null;
+      quantity: number;
+      unitPriceCny: number | null;
+    }[] = [];
+    for (const c of axisColors) {
+      for (const s of axisSizes) {
+        const q = parseInt(optionQty[optKey(c, s?.name ?? null)] || "");
+        if (!q || q <= 0) continue;
+        out.push({
+          color: c,
+          sizeName: s?.name ?? null,
+          quantity: q,
+          // 사이즈별 단가가 따로 있으면 그 단가로 계산
+          unitPriceCny: s?.costCny ?? null,
+        });
+      }
+    }
+    return out;
+  };
+
+  const optionItems = buildOptionItems();
+  const optionTotalQty = optionItems.reduce((s, it) => s + it.quantity, 0);
+  const optionTotalCny = optionItems.reduce(
+    (s, it) => s + it.quantity * (it.unitPriceCny ?? parseFloat(orderForm.unitPriceCny || "0")),
+    0
+  );
+
+  /** 실제 발주에 쓸 총수량 — 매트릭스를 쓰면 합계가 정답 */
+  const effectiveQty = useOptionMatrix
+    ? optionTotalQty
+    : parseInt(orderForm.quantity || "0");
+  const effectiveTotalCny = useOptionMatrix
+    ? optionTotalCny
+    : (parseFloat(orderForm.unitPriceCny || "0") || 0) * (parseInt(orderForm.quantity || "0") || 0);
+
   const submitOrder = async () => {
     if (!selected) return;
-    if (!orderForm.quantity) { alert("수량을 입력해주세요"); return; }
     if (!orderForm.unitPriceCny) { alert("발주 단가를 입력해주세요"); return; }
+    if (useOptionMatrix && optionItems.length === 0) {
+      alert("색상·사이즈별 수량을 한 칸 이상 입력해주세요");
+      return;
+    }
+    if (!useOptionMatrix && !orderForm.quantity) { alert("수량을 입력해주세요"); return; }
     setOrderSaving(true);
     try {
-      const qty = parseInt(orderForm.quantity);
       const unitPrice = parseFloat(orderForm.unitPriceCny);
-      const totalCny = qty * unitPrice;
-      const totalKrw = totalCny * (selected.exchangeRate || 193.5);
+      const qty = effectiveQty;
+      const totalCny = effectiveTotalCny;
+      const exRate = selected.exchangeRate || 193.5;
+      const totalKrw = Math.round(totalCny * exRate);
 
       // 1. 발주 기록 저장
       const res = await fetch("/api/orders", {
@@ -458,6 +528,8 @@ export default function SourcingPage() {
           unitPriceCny: unitPrice,
           totalCny,
           totalKrw,
+          exchangeRate: exRate,
+          items: optionItems,
           memo: orderForm.memo || null,
           orderedAt: orderForm.orderedAt,
           expectedArrival: orderForm.expectedArrival || null,
@@ -481,6 +553,7 @@ export default function SourcingPage() {
       await loadOrderHistory(selected.id);
 
       setShowOrderModal(false);
+      setOptionQty({});
       setOrderForm({
         unitPriceCny: "",
         quantity: "",
@@ -878,6 +951,7 @@ export default function SourcingPage() {
                 <button
                   onClick={() => {
                     setShowOrderModal(true);
+                    setOptionQty({});
                     setOrderForm({
                       unitPriceCny: String(selected.costCny || ""),
                       quantity: selected.moq ? String(selected.moq) : "",
@@ -924,6 +998,7 @@ export default function SourcingPage() {
               <button
                 onClick={() => {
                   setShowOrderModal(true);
+                    setOptionQty({});
                   setOrderForm({
                     unitPriceCny: String(selected.costCny || ""),
                     quantity: selected.moq ? String(selected.moq) : "",
@@ -986,6 +1061,20 @@ export default function SourcingPage() {
                       {ord.totalKrw && (
                         <div className="text-sm font-semibold text-blue-700 mt-0.5">{formatKrw(ord.totalKrw)}</div>
                       )}
+                      {/* 색상·사이즈별 내역 */}
+                      {(ord.items?.length ?? 0) > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1.5">
+                          {ord.items!.map((it) => (
+                            <span
+                              key={it.id}
+                              className="px-2 py-0.5 rounded-lg bg-white border border-gray-200 text-[11px] text-gray-600"
+                            >
+                              {[it.color, it.sizeName].filter(Boolean).join(" ")}
+                              <b className="ml-1 text-gray-800">{it.quantity.toLocaleString()}</b>
+                            </span>
+                          ))}
+                        </div>
+                      )}
                       <div className="flex gap-3 mt-1 text-xs text-gray-500">
                         {ord.shippedAt && <span>🚢 선적 {ord.shippedAt.slice(0, 10)}</span>}
                         {ord.expectedArrival && <span>📅 입고예정 {ord.expectedArrival.slice(0, 10)}</span>}
@@ -1034,31 +1123,134 @@ export default function SourcingPage() {
                         </p>
                       )}
                     </div>
-                    {/* 수량 */}
+                    {/* 수량 — 옵션이 있으면 매트릭스 합계를 보여주고 직접입력은 막는다 */}
                     <div>
-                      <label className="text-xs text-gray-500 mb-1 block font-medium">수량 *</label>
-                      <input
-                        type="number" inputMode="numeric"
-                        value={orderForm.quantity}
-                        onChange={e => setOrderForm(p => ({ ...p, quantity: e.target.value }))}
-                        placeholder="200"
-                        className="w-full border-2 border-orange-200 rounded-xl px-3 py-3 text-lg font-bold focus:outline-none focus:border-orange-400 bg-white"
-                      />
+                      <label className="text-xs text-gray-500 mb-1 block font-medium">
+                        {useOptionMatrix ? "총 수량 (자동합계)" : "수량 *"}
+                      </label>
+                      {useOptionMatrix ? (
+                        <div className="w-full border-2 border-orange-200 rounded-xl px-3 py-3 text-lg font-bold bg-orange-100/60 text-orange-800">
+                          {optionTotalQty.toLocaleString()}
+                          <span className="text-xs font-medium text-orange-600 ml-1">개</span>
+                        </div>
+                      ) : (
+                        <input
+                          type="number" inputMode="numeric"
+                          value={orderForm.quantity}
+                          onChange={e => setOrderForm(p => ({ ...p, quantity: e.target.value }))}
+                          placeholder="200"
+                          className="w-full border-2 border-orange-200 rounded-xl px-3 py-3 text-lg font-bold focus:outline-none focus:border-orange-400 bg-white"
+                        />
+                      )}
                     </div>
                   </div>
+
+                  {/* ── 색상 × 사이즈 수량 매트릭스 ── */}
+                  {useOptionMatrix && (
+                    <div className="bg-white rounded-xl p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-semibold text-gray-700">
+                          {hasColorAxis && hasSizeAxis
+                            ? "색상 × 사이즈별 수량"
+                            : hasColorAxis
+                            ? "색상별 수량"
+                            : "사이즈별 수량"}
+                        </p>
+                        {optionTotalQty > 0 && (
+                          <button
+                            type="button"
+                            onClick={() => setOptionQty({})}
+                            className="text-xs text-gray-400 underline cursor-pointer"
+                          >
+                            모두 지우기
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="overflow-x-auto -mx-1 px-1">
+                        <table className="w-full text-xs border-separate border-spacing-1">
+                          <thead>
+                            <tr>
+                              <th className="text-left text-gray-400 font-medium min-w-[64px]">
+                                {hasColorAxis ? "색상" : ""}
+                              </th>
+                              {axisSizes.map((s, i) => (
+                                <th key={s?.id ?? `s${i}`} className="text-gray-500 font-medium min-w-[68px]">
+                                  {s ? (
+                                    <>
+                                      {s.name}
+                                      {s.costCny != null && s.costCny !== selected.costCny && (
+                                        <span className="block text-[10px] text-orange-500 font-normal">
+                                          ¥{s.costCny}
+                                        </span>
+                                      )}
+                                    </>
+                                  ) : (
+                                    "수량"
+                                  )}
+                                </th>
+                              ))}
+                              <th className="text-gray-400 font-medium min-w-[44px]">소계</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {axisColors.map((c, ci) => {
+                              const rowQty = axisSizes.reduce(
+                                (sum, s) =>
+                                  sum + (parseInt(optionQty[optKey(c, s?.name ?? null)] || "") || 0),
+                                0
+                              );
+                              return (
+                                <tr key={c ?? `c${ci}`}>
+                                  <td className="text-gray-700 font-medium whitespace-nowrap pr-1">
+                                    {c ?? "전체"}
+                                  </td>
+                                  {axisSizes.map((s, si) => {
+                                    const k = optKey(c, s?.name ?? null);
+                                    return (
+                                      <td key={k || `cell${si}`}>
+                                        <input
+                                          type="number"
+                                          inputMode="numeric"
+                                          min={0}
+                                          value={optionQty[k] ?? ""}
+                                          onChange={(e) =>
+                                            setOptionQty((p) => ({ ...p, [k]: e.target.value }))
+                                          }
+                                          placeholder="0"
+                                          className="w-full border border-gray-200 rounded-lg px-1.5 py-2 text-center text-sm font-semibold focus:outline-none focus:border-orange-400 bg-white"
+                                        />
+                                      </td>
+                                    );
+                                  })}
+                                  <td className="text-center font-bold text-gray-700 whitespace-nowrap">
+                                    {rowQty > 0 ? rowQty.toLocaleString() : "-"}
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                      <p className="text-[11px] text-gray-400">
+                        입력한 칸만 발주에 들어갑니다. 사이즈별 단가가 있으면 그 단가로 계산돼요.
+                      </p>
+                    </div>
+                  )}
+
                   {/* 총합 자동계산 */}
-                  {orderForm.unitPriceCny && orderForm.quantity && (
+                  {orderForm.unitPriceCny && effectiveQty > 0 && (
                     <div className="bg-white rounded-xl px-4 py-3 space-y-1">
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-gray-500">총 발주금액</span>
                         <span className="text-xl font-extrabold text-orange-600">
-                          ¥{(parseFloat(orderForm.unitPriceCny) * parseInt(orderForm.quantity)).toLocaleString()}
+                          ¥{Math.round(effectiveTotalCny).toLocaleString()}
                         </span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-xs text-gray-500">원화 환산</span>
                         <span className="text-base font-bold text-blue-700">
-                          {formatKrw(parseFloat(orderForm.unitPriceCny) * parseInt(orderForm.quantity) * (selected.exchangeRate || 193.5))}
+                          {formatKrw(effectiveTotalCny * (selected.exchangeRate || 193.5))}
                         </span>
                       </div>
                     </div>
@@ -1110,7 +1302,7 @@ export default function SourcingPage() {
                     type="text"
                     value={orderForm.memo}
                     onChange={e => setOrderForm(p => ({ ...p, memo: e.target.value }))}
-                    placeholder="색상, 사이즈, 특이사항 등"
+                    placeholder="포장 요청, 납기 협의 등 특이사항"
                     className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:border-orange-400"
                   />
                 </div>
@@ -1118,7 +1310,7 @@ export default function SourcingPage() {
                 {/* 확정 버튼 */}
                 <button
                   onClick={submitOrder}
-                  disabled={orderSaving || !orderForm.unitPriceCny || !orderForm.quantity}
+                  disabled={orderSaving || !orderForm.unitPriceCny || effectiveQty <= 0}
                   className="w-full bg-orange-500 text-white rounded-2xl py-4 font-bold text-base disabled:opacity-40 shadow-sm cursor-pointer select-none active:scale-[0.97] active:brightness-90 transition-all duration-150"
                 >
                   {orderSaving ? "처리 중..." : "발주 확정하기 →"}

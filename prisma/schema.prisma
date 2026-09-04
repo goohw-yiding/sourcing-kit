@@ -29,9 +29,12 @@ model Subscription {
   status          String    @default("active") // "active" | "cancelled" | "past_due" | "expired"
   billingKey      String?   // 토스페이먼츠 빌링키 (monthly/yearly)
   customerKey     String?   // 토스페이먼츠 고객키
-  expiresAt       DateTime? // taste 플랜 만료일
+  expiresAt       DateTime? // taste 만료일 / pro 취소 후 이용가능 종료일
   nextBillingAt   DateTime?
   cancelledAt     DateTime?
+  billingRetry    Int       @default(0)  // 연속 결제 실패 횟수 (성공 시 0으로 초기화)
+  lastBillingError String?                // 마지막 결제 실패 사유
+  lastBilledAt    DateTime?               // 마지막 자동결제 성공 시각
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
@@ -264,4 +267,22 @@ model Order {
   tenant    Tenant   @relation(fields: [tenantId], references: [id])
   buyer     Buyer?   @relation(fields: [buyerId], references: [id])
   product   Product? @relation(fields: [productId], references: [id])
+  items     OrderItem[]
+}
+
+/// 발주 옵션별 수량 — 색상 × 사이즈 조합. 색상만/사이즈만 있어도 되고,
+/// 옵션이 없는 상품은 items 없이 Order.quantity 만 쓴다.
+model OrderItem {
+  id           String  @id @default(cuid())
+  orderId      String
+
+  color        String?  // Product.colors 중 하나 (없으면 null)
+  sizeName     String?  // ProductSize.name (없으면 null)
+  quantity     Int
+  unitPriceCny Float?   // 사이즈별 단가가 다를 때. 비우면 Order.unitPriceCny 적용
+  sortOrder    Int      @default(0)
+
+  order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
 }

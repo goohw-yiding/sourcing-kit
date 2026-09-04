@@ -37,6 +37,9 @@ export async function GET() {
     nextBillingAt: sub?.nextBillingAt ?? null,
     expiresAt: sub?.expiresAt ?? null,
     cancelledAt: sub?.cancelledAt ?? null,
+    billingRetry: sub?.billingRetry ?? 0,
+    lastBillingError: sub?.lastBillingError ?? null,
+    lastBilledAt: sub?.lastBilledAt ?? null,
     limits: {
       productLimit: planInfo.productLimit,
       supplierLimit: planInfo.supplierLimit,
@@ -57,9 +60,20 @@ export async function DELETE() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  await cancelProPlan(session.user.tenantId);
+  const sub = await cancelProPlan(session.user.tenantId);
+  const until = sub.expiresAt
+    ? new Date(sub.expiresAt).toLocaleDateString("ko-KR", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })
+    : null;
+
   return NextResponse.json({
     ok: true,
-    message: "구독이 취소됩니다. 이번 달 말까지 Pro 기능을 이용할 수 있습니다.",
+    expiresAt: sub.expiresAt,
+    message: until
+      ? `구독이 해지 예약되었습니다. ${until}까지 Pro 기능을 그대로 이용할 수 있고, 이후에는 자동결제되지 않습니다.`
+      : "구독이 해지되었습니다.",
   });
 }
